@@ -1,29 +1,30 @@
-Levels are planned by an array marking off boxes and open tiles. 
-    0 = open tile
-    1 = box
-    2 = player
-    3 = guard
-    4 = gem
-    5 = vertical laser
-    6 = horizontal laser
+Player functions:
+- moveRight() - Moves 1 space right
+- moveLeft() - Moves 1 space left
+- moveUp() - Moves 1 space up
+- moveDown() - Moves 1 space down
+- shootBall() - Shoot ball 4 spaces right
+- inFront() - if Defender is in a block to the right of the user, then return true, otherwise return false
+- lookLeft() - Used in penalty level and if goalie is in the left side of the goal, then return true, otherwise return false
+- lookMiddle() - Used in penalty level and if goalie is in the middle of the goal, then return true, otherwise return false
+- lookRight() - Used in penalty level and if goalie is in the right side of the goal, then return true, otherwise return false
+- shootLeft() - Used in penalty level and shoots the ball to the left side of goal
+- shootMiddle() - Used in penalty level and shoots the ball to the middle of the goal
+- shootRight() - Used in penalty level and shoots the ball to the right side of goal
+- wait() - waits 1 second
 
 1st Level:
-Straight Line. User would move a specific direction a number of times in order to collect the jewel.
+The user has to move right certain number of times to get closer to the goal and shoot the ball to score with no defenders.
 
 2nd Level:
-S shape. User would start in the bottom left corner. They would then move right a certain number of times, up a certain number of times, and finally right again a certain number of times before collecting the jewel.
+2 defenders in front of goal. User would start in the middle left of screen. They would then move around both defenders and then back in front of goal to shoot and score. Here the user would not use any loops.
 
 3rd Level:
-More difficult shape. Initial position could be anywhere but this could be a more complicated path to the jewel. Simply to help get users more comfortable with control system before adding guards and obstacles.
+More difficult level. User starts on the left side of screen and needs to move to the right until they are in front of a defender where they need to move around and score a goal. Introducing while loops and new function called inFront().
 
 4th Level:
-Back to a simpler shape for the map. Introduce a single obstacle into the the level design. The user must avoid obstacle while also making their way to the jewel. \*Insert conditions here?
+Penalty kick. There will be a goalie that takes up 1 of the 3 blocks in the goal and the user will need to shoot the ball in an open block where the goalie is not. Introduction of if/else-if statements and new functions called 
+lookLeft(), lookMiddle(), lookRight(), shootLeft(), shootMiddle(), shootRight().
 
-5th Level:
-Map will be a + shape. Instead of an obstacle, introduce a single guard for the player to avoid. The guard will move, along a specific path up and down, and the user must walk from left to right across the + while avoiding the guard. If the user bumps into the guard it will result in a game over.
-
-6th Level:
-Map will be a slightly more complicated shape, with at least one guard and one obstacle to avoid. The user must make it around the guard and past the obstacle to the jewel.
-
-When to introduce loops? Do it early and encourage them to use them from the beginning or reuse all of the levels to use loops?
-To make the game easier, could do some methods for the user, like moving until hitting a wall. Could implement a function where the student checks to see if guard is in the vicinity, and if not, then they move forward etc.
+5th level:
+Introduce Moving Defenders. Defenders will only move up and down. User will have to implement a while loop using the wait() function to stop before running into a defender. After moving through all of the defenders the user will shoot the ball to score.
