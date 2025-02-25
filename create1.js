@@ -17,14 +17,8 @@ function create1() {
 
   document.getElementById('level-select').value = '2';
 
-  // document.getElementById("nextLevel").addEventListener("click", (event) => {
-  //   //something to load level 2
-  //   this.scene.start("level2");
-  // });
-
     arr1 = getLevel(1);
 
-    generateCheckerboard(this, 8); // Generate background
     setup(this);
     
    // GENERATE WALLS ---------------------------------------------------------------------
@@ -94,12 +88,5 @@ function create1() {
 
     // Input Events
     cursors = this.input.keyboard.createCursorKeys();
-     
-    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
-    // this.physics.add.overlap(player, jewel, collectJewel, null, this);
-  
-    //this.hitGuard = hitGuard.bind(this);
-
-    // Collision event
   }
 
