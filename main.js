@@ -70,33 +70,8 @@ var playerCol = 4; //the column the player is in in the game board array
 var game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image("blueT", "assets/tileBlue.png");
-  this.load.image("whiteT", "assets/tileWhite.png");
-  this.load.image("wall", "assets/WallBox.png");
-  this.load.image("wall_light", "assets/WallBoxLight.png");
-  this.load.image("wallS", "assets/WallBoxSlash.png");
-  this.load.image("wallSR", "assets/WallBoxSlashReverse.png");
-  this.load.image("wallDS", "assets/WallBoxDoubleSlash.png");
-  this.load.image("painting1", "assets/WallBoxPainting.png");
-  this.load.image("painting2", "assets/WallBoxPainting2.png");
-  this.load.image("painting3", "assets/WallBoxPainting3.png");
-  this.load.image("painting4", "assets/WallBoxPainting4.png");
-  this.load.image("void", "assets/void.png");
-  this.load.image("jewel", "assets/jewel.png");
-  // this.load.image("jewelg", "assets/jewelg.png");
-  this.load.image("GameOver", "assets/Gameover.png");
-  this.load.image("NextLevel", "assets/NextLevel.png");
-  this.load.image("AvoidGuards", "assets/Avoidtheguards.png");
-  this.load.image("laserV", "assets/laser_vertical.png");
-  this.load.image("GuardLightH", "assets/guard_with_torchH.png");
-  this.load.image("GuardLightV", "assets/guard_with_torchV.png");
-  this.load.image("laserH", "assets/laser_horizontal.png");
-  this.load.image("laserV", "assets/laser_vertical.png");
-  this.load.spritesheet("dude", "assets/Robber.png", {
-    frameWidth: 190,
-    frameHeight: 340,
-  });
-  this.load.image("guard", "assets/Guard.png");
+  this.load.image("jewel", "assets/user_player.png");
+  this.load.image("guard", "assets/defender.png");
 }
 
 var toggleVal = false;
