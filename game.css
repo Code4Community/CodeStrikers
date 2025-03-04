@@ -1,0 +1,19 @@
+.box {
+    width: 600px;
+    margin: 30px;
+    height: 400px;
+    background-color: lightgrey;
+    background-image: url(src/assets/soccer_field.JPG);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+}
