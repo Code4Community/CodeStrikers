@@ -8,12 +8,21 @@
     background-position: center;
     background-repeat: no-repeat;
     border: 1px solid black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     font-size: 18px;
     font-weight: bold;
     text-align: center;
     border-radius: 10px;
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
 }
+
+.goal {
+    width: 200px;
+    height: auto;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%); /* Centers vertically */
+    margin-left: 150px;
+    filter: grayscale(100%) brightness(0%);
+}
+
+
