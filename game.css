@@ -119,4 +119,14 @@
     transform: translateY(-50%); /* Centers vertically */
     margin-left: 150px;
     filter: grayscale(100%) brightness(0%);
+    margin-top: -150px;
+    margin-left: 180px;
+}
+
+.ball {
+  height: 30px;
+  width: auto;
+  position: absolute;
+  margin-top: 250px;
+  margin-left: -200px;
 }
