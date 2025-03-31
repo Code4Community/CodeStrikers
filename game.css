@@ -43,6 +43,7 @@
       width: 0;
       height: 0;
     }
+  
     
     /* The slider */
     .slider {
@@ -117,16 +118,39 @@
     position: absolute;
     top: 60%;
     transform: translateY(-50%); /* Centers vertically */
-    margin-left: 150px;
+    left: 339px;
     filter: grayscale(100%) brightness(0%);
-    margin-top: -150px;
-    margin-left: 180px;
+    top: 320px;
 }
 
 .ball {
   height: 30px;
   width: auto;
   position: absolute;
-  margin-top: 250px;
-  margin-left: -200px;
+  top: 360px;
+  left: 90px;
 }
+
+.defender {
+  width: 100px;
+  height: auto;
+  position: absolute;
+  left: 345px;
+  0px;
+  bottom: 430px;
+}
+.attacker {
+  height: 145px;
+  width: auto;
+  position: absolute;
+  left: 45px;
+  bottom: 390px;
+}
+
+html, body {
+  width: 800px;
+  min-height: 800px;
+  max-height: 800px;
+  overflow: hidden;
+}
+
