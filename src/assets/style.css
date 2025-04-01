@@ -1,0 +1,10 @@
+/* Add your custom CSS here */
+
+/* Highlight the game container when you click on it */
+#game-container.active canvas {
+    box-shadow: 0 0 4px dodgerblue;
+}
+
+#game-container {
+    z-index: 2;
+}
