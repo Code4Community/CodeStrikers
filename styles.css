@@ -1,1 +1,6 @@
-
+#myCanvas {
+  border: 2px solid black;
+  display: block;
+  margin: 40px auto; /* Centered with top margin */
+  background-color: #f0f0f0; /* Optional: background color */
+}
