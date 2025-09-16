@@ -8,13 +8,54 @@ body {
   width: 100vw;
   height: 100vh;
   display: flex;
+  padding-top: 100px;
 }
 
 #canvas1 {
-  width: 950px;
+  width: 1000px;
   height: 600px;
   border: 4px solid black;
-  position: absolute;
-  top: 100px;
-  left: 0;
+}
+
+.side-panel {
+  flex: 1;
+  height: 600px;
+  background-color: lightgreen;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+  margin-left: 10px;
+  border-radius: 10px;
+  margin-right: 10px;
+}
+
+.side-panel h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.side-panel p {
+  font-size: 18px;
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 450px;
+}
+
+#start-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #2e8b57;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+#start-btn:hover {
+  background-color: #256b45;
 }
