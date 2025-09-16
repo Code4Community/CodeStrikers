@@ -1,2 +1,1 @@
-c4c
-67
+# CodeStrikes game
