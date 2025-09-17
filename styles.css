@@ -15,6 +15,7 @@ body {
   width: 1000px;
   height: 600px;
   border: 4px solid black;
+  background: url("assets/soccer_field.png");
 }
 
 .side-panel {
