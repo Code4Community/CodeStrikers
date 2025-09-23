@@ -61,8 +61,9 @@ function startGame() {
   document.getElementById("action-buttons").style.display = "block";
 
   const editor = document.getElementById("game-textbox");
-  editor.contentEditable = "true";
-  editor.classList.add("enabled");
+  editor.style.display = "block"; // 👈 Make it visible
+  editor.contentEditable = "true"; // 👈 Make it editable
+  editor.classList.add("enabled"); // 👈 Optional: apply your "enabled" styles
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
