@@ -7,12 +7,36 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <canvas id="canvas1"></canvas>
+    <!-- Row containing canvas and side panel -->
+    <div class="row">
+      <canvas id="canvas1"></canvas>
+      <!-- Right-side UI panel -->
+      <div class="side-panel">
+        <h1>Code Strikers</h1>
+        <p>How to Play</p>
+        <button id="start-btn" onclick="startGame()">Start</button>
+      </div>
+    </div>
 
-    <div class="side-panel">
-      <h1>Code Strikers</h1>
-      <p>How to Play</p>
-      <button id="start-btn" onclick="startGame()">Start</button>
+    <!-- Instructions section -->
+    <div class="instructions">
+      <h1>Instructions</h1>
+      <p>
+        Player functions:<br><br>
+        moveRight() - Moves 1 space right<br>
+        moveLeft() - Moves 1 space left<br>
+        moveUp() - Moves 1 space up<br>
+        moveDown() - Moves 1 space down<br>
+        shootBall() - Shoot ball 4 spaces right<br><br>
+
+        <strong>1st Level:</strong> The user has to move right certain number of times to get closer to the goal and shoot the ball to score with no defenders.<br><br>
+
+        <strong>2nd Level:</strong> 2 defenders in front of goal. User starts in the middle left of screen. They move around both defenders and then back in front of goal to shoot and score. No loops required.<br><br>
+
+        <strong>3rd Level:</strong> More difficult level. User starts on the left side of screen and needs to move to the right until in front of a defender where they move around and score. Introduces while loops and the new function inFront().<br><br>
+
+        <strong>4th Level:</strong> Introduce moving defenders. Defenders move only up and down. After moving through all defenders the user shoots the ball to score.
+      </p>
     </div>
 
     <script src="main.js"></script>
