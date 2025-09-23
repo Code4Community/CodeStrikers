@@ -2,37 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Canvas Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Strikers</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="row">
       <canvas id="canvas1"></canvas>
-      <!-- ✅ Right-side UI panel -->
       <div class="side-panel">
         <h1>Code Strikers</h1>
+        <pre
+          id="game-textbox"
+          contenteditable="false"
+          spellcheck="false"
+          data-placeholder="Type Code Here..."
+        ></pre>
+
+        <button id="start-btn" onclick="startGame()">Start</button>
+        <div id="action-buttons" style="display: none">
+          <button id="run-btn" class="green-btn">Run</button>
+          <button id="clear-btn" class="red-btn">Clear</button>
+        </div>
       </div>
     </div>
+
     <div class="instructions">
       <h1>Instructions</h1>
-      <p>Player functions:
+      <p>
+        Player functions:<br /><br />
+        <code>moveRight()</code> - Moves 1 space right<br />
+        <code>moveLeft()</code> - Moves 1 space left<br />
+        <code>moveUp()</code> - Moves 1 space up<br />
+        <code>moveDown()</code> - Moves 1 space down<br />
+        <code>shootBall()</code> - Shoot ball 4 spaces right<br /><br />
 
-moveRight() - Moves 1 space right
-moveLeft() - Moves 1 space left
-moveUp() - Moves 1 space up
-moveDown() - Moves 1 space down
-shootBall() - Shoot ball 4 spaces right
+        <strong>1st Level:</strong> The user has to move right a certain number
+        of times to get closer to the goal and shoot the ball to score with no
+        defenders.<br /><br />
 
-1st Level: The user has to move right certain number of times to get closer to the goal and shoot the ball to score with no defenders.
+        <strong>2nd Level:</strong> 2 defenders in front of goal. User starts in
+        the middle left of screen. They move around both defenders and then back
+        in front of goal to shoot and score. No loops required.<br /><br />
 
-2nd Level: 2 defenders in front of goal. User would start in the middle left of screen. They would then move around both defenders and then back in front of goal to shoot and score. Here the user would not use any loops.
+        <strong>3rd Level:</strong> More difficult level. User starts on the
+        left side of screen and needs to move to the right until in front of a
+        defender where they move around and score. Introduces while loops and
+        the new function inFront().<br /><br />
 
-3rd Level: More difficult level. User starts on the left side of screen and needs to move to the right until they are in front of a defender where they need to move around and score a goal. Introducing while loops and new function called inFront().
-
-4th level: Introduce Moving Defenders. Defenders will only move up and down. After moving through all of the defenders the user will shoot the ball to score.
-    </p>
+        <strong>4th Level:</strong> Introduce moving defenders. Defenders move
+        only up and down. After moving through all defenders the user shoots the
+        ball to score.
+      </p>
     </div>
+
     <script src="main.js"></script>
   </body>
 </html>
