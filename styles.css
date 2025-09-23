@@ -8,7 +8,8 @@ body {
   width: 100vw;
   height: 100vh;
   display: flex;
-  padding-top: 100px;
+  flex-direction: column;
+  padding-top: 30px;
 }
 
 #canvas1 {
@@ -45,7 +46,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 450px;
 }
 
 #start-btn {
@@ -60,4 +60,32 @@ body {
 
 #start-btn:hover {
   background-color: #256b45;
+}
+
+.instructions {
+  width: 100%;
+  margin-top: 20px;          /* spacing below the row */
+  padding: 20px 30px;        /* breathing room inside */
+  background-color: #f9f9f9; /* subtle background */
+  border: 2px solid #ddd;    /* light border */
+  border-radius: 10px;       /* rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* soft shadow */
+  text-align: center;        /* center the content */
+}
+
+.instructions h1 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: #2e8b57; /* matches your start button green */
+}
+
+.instructions p {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.row {
+  display: flex;
+  position: relative;
 }
