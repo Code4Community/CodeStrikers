@@ -10,6 +10,8 @@ body {
   display: flex;
   flex-direction: column;
   padding-top: 30px;
+  background-color: #f4fff6;
+  font-family: "Segoe UI", sans-serif;
 }
 
 #canvas1 {
@@ -20,10 +22,15 @@ body {
   background-size: contain;
 }
 
+.row {
+  display: flex;
+  position: relative;
+}
+
 .side-panel {
   flex: 1;
   height: 580px;
-  background-color: lightgreen;
+  background-color: #c8e6c9;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -38,6 +45,7 @@ body {
 .side-panel h1 {
   font-size: 24px;
   margin-bottom: 20px;
+  color: #2e8b57;
 }
 
 .side-panel p {
@@ -58,6 +66,7 @@ body {
   border: none;
   border-radius: 5px;
   margin-top: 450px;
+  transition: background-color 0.2s ease;
 }
 
 #start-btn:hover {
@@ -77,6 +86,7 @@ body {
   cursor: pointer;
   border-radius: 5px;
   border: none;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .green-btn {
@@ -86,6 +96,7 @@ body {
 
 .green-btn:hover {
   background-color: #256b45;
+  transform: translateY(-2px);
 }
 
 .red-btn {
@@ -96,6 +107,7 @@ body {
 
 .red-btn:hover {
   background-color: #b71c1c;
+  transform: translateY(-2px);
 }
 
 #game-textbox {
@@ -166,30 +178,93 @@ body {
   font-weight: bold;
 }
 
+/* 🌿 Improved Instructions Section */
 .instructions {
   width: 100%;
-  margin-top: 20px;
-  padding: 20px 30px;
-  background-color: #f9f9f9;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
+  margin-top: 30px;
+  padding: 30px 40px;
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+  border: 2px solid #c8e6c9;
+  border-radius: 15px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  font-family: "Segoe UI", sans-serif;
+  text-align: left;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .instructions h1 {
-  font-size: 28px;
-  margin-bottom: 15px;
+  text-align: center;
+  font-size: 32px;
+  margin-bottom: 25px;
   color: #2e8b57;
+  text-shadow: 1px 1px 2px rgba(46, 139, 87, 0.3);
 }
 
-.instructions p {
+.instructions .section {
+  margin-bottom: 25px;
+}
+
+.instructions h2 {
+  font-size: 22px;
+  color: #256b45;
+  border-left: 5px solid #2e8b57;
+  padding-left: 10px;
+  margin-bottom: 10px;
+}
+
+.instructions ul {
+  list-style: none;
+  padding-left: 15px;
+}
+
+.instructions li {
   font-size: 18px;
-  line-height: 1.6;
   color: #333;
+  margin: 6px 0;
+  background-color: #ffffffcc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
 }
 
-.row {
-  display: flex;
-  position: relative;
+.instructions li:hover {
+  background-color: #dff0e0;
+}
+
+.instructions code {
+  font-family: "Courier New", monospace;
+  background-color: #e8f5e9;
+  color: #007acc;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.instructions .level {
+  margin-bottom: 15px;
+  background-color: #ffffffcc;
+  padding: 12px 15px;
+  border-radius: 10px;
+  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.instructions .level:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(46, 139, 87, 0.2);
+}
+
+.instructions .level h3 {
+  font-size: 20px;
+  color: #2e8b57;
+  margin-bottom: 5px;
+}
+
+.instructions .level p {
+  font-size: 17px;
+  color: #333;
+  line-height: 1.5;
 }
