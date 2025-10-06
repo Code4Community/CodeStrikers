@@ -44,34 +44,42 @@
     </div>
 
     <div class="instructions">
-      <h1>Instructions</h1>
-      <p>
-        Player functions:<br /><br />
-        <code>moveRight()</code> - Moves 1 space right<br />
-        <code>moveLeft()</code> - Moves 1 space left<br />
-        <code>moveUp()</code> - Moves 1 space up<br />
-        <code>moveDown()</code> - Moves 1 space down<br />
-        <code>shootBall()</code> - Shoot ball 4 spaces right<br /><br />
+  <h1>⚽ Game Instructions</h1>
 
-        <strong>1st Level:</strong> The user has to move right a certain number
-        of times to get closer to the goal and shoot the ball to score with no
-        defenders.<br /><br />
+  <div class="section">
+    <h2>Player Functions</h2>
+    <ul>
+      <li><code>moveRight()</code> – Move 1 space right</li>
+      <li><code>moveLeft()</code> – Move 1 space left</li>
+      <li><code>moveUp()</code> – Move 1 space up</li>
+      <li><code>moveDown()</code> – Move 1 space down</li>
+      <li><code>shootBall()</code> – Shoot ball 4 spaces right</li>
+    </ul>
+  </div>
 
-        <strong>2nd Level:</strong> 2 defenders in front of goal. User starts in
-        the middle left of screen. They move around both defenders and then back
-        in front of goal to shoot and score. No loops required.<br /><br />
-
-        <strong>3rd Level:</strong> More difficult level. User starts on the
-        left side of screen and needs to move to the right until in front of a
-        defender where they move around and score. Introduces while loops and
-        the new function inFront().<br /><br />
-
-        <strong>4th Level:</strong> Introduce moving defenders. Defenders move
-        only up and down. After moving through all defenders the user shoots the
-        ball to score.
-      </p>
+  <div class="section">
+    <h2>Levels</h2>
+    <div class="level">
+      <h3>Level 1</h3>
+      <p>Move right until close to the goal and shoot to score. No defenders.</p>
     </div>
 
+    <div class="level">
+      <h3>Level 2</h3>
+      <p>Two defenders in front of the goal. Move around them, then shoot to score (no loops required).</p>
+    </div>
+
+    <div class="level">
+      <h3>Level 3</h3>
+      <p>More difficult level introducing <code>while</code> loops and <code>inFront()</code>. Move around defenders to score.</p>
+    </div>
+
+    <div class="level">
+      <h3>Level 4</h3>
+      <p>Defenders move up and down. Time your movement and shoot to score!</p>
+    </div>
+  </div>
+</div>
     <script src="main.js"></script>
   </body>
 </html>
