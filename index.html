@@ -10,7 +10,17 @@
     <div class="row">
       <canvas id="canvas1"></canvas>
       <div class="side-panel">
-        <h1>Code Strikers</h1>
+        <div class="level-selector">
+          <label for="level-dropdown">Level:</label>
+          <select id="level-dropdown">
+            <option value="1">Level 1</option>
+            <option value="2">Level 2</option>
+            <option value="3">Level 3</option>
+            <option value="4">Level 4</option>
+            <option value="5">Level 5</option>
+          </select>
+        </div>
+
         <pre
           id="game-textbox"
           contenteditable="false"
@@ -20,8 +30,14 @@
 
         <button id="start-btn" onclick="startGame()">Start</button>
         <div id="action-buttons" style="display: none">
-          <button id="run-btn" class="green-btn">Run</button>
-          <button id="clear-btn" class="red-btn">Clear</button>
+          <div class="button-row">
+            <button id="run-btn" class="green-btn">Run</button>
+            <button id="clear-btn" class="red-btn">Clear</button>
+          </div>
+          <div class="level-nav-row">
+            <button id="back-level-btn" class="nav-btn">◀ Back Level</button>
+            <button id="next-level-btn" class="nav-btn">Next Level ▶</button>
+          </div>
         </div>
       </div>
     </div>
