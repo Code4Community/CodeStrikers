@@ -19,6 +19,15 @@ body {
   background: url("assets/soccer_field.png") no-repeat center center;
   background-size: contain;
 }
+.page-title {
+  text-align: center;
+  font-size: 36px;
+  color: #FF0000;
+  margin-bottom: 10px;
+  font-family: "Trebuchet MS", sans-serif;
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+}
 
 .side-panel {
   flex: 1;
