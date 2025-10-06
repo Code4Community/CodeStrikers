@@ -19,12 +19,19 @@ class Player {
 }
 
 class Field {
-  constructor(game) {
+  constructor(game, side) {
     this.game = game;
     this.width = 300;
     this.height = 200;
-    this.x = 1;
-    this.y = 200;
+    this.side = side;
+
+    if (side === "left") {
+      this.x = 1;
+      this.y = 200;
+    } else {
+      this.x = game.width - this.width - 1;
+      this.y = 200;
+    }
   }
 
   draw(context) {
@@ -38,32 +45,44 @@ class Game {
     this.canvas = canvas;
     this.width = this.canvas.width;
     this.height = this.canvas.height;
+    this.currentLevel = 1;
     this.player = new Player(this);
-    this.field = new Field(this);
+    this.fieldLeft = new Field(this, "left");
+    this.fieldRight = new Field(this, "right");
   }
 
   render(context) {
-    this.field.draw(context);
+    this.fieldLeft.draw(context);
+    this.fieldRight.draw(context);
     this.player.draw(context);
     this.player.update();
+  }
+
+  loadLevel(level) {
+    this.currentLevel = level;
+    this.player.x = 100;
+    this.player.y = 100;
+    console.log(`Level ${level} loaded`);
   }
 }
 
 function startGame() {
   const canvas = document.getElementById("canvas1");
   const ctx = canvas.getContext("2d");
-  canvas.width = 1000;
-  canvas.height = 600;
+  canvas.width = 888;
+  canvas.height = 613;
 
   const game = new Game(canvas);
+  window.setCurrentGame(game);
 
   document.getElementById("start-btn").style.display = "none";
-  document.getElementById("action-buttons").style.display = "block";
+  document.getElementById("action-buttons").style.display = "flex";
 
   const editor = document.getElementById("game-textbox");
-  editor.style.display = "block"; // 👈 Make it visible
-  editor.contentEditable = "true"; // 👈 Make it editable
-  editor.classList.add("enabled"); // 👈 Optional: apply your "enabled" styles
+  editor.style.display = "block";
+  editor.contentEditable = "true";
+  editor.classList.add("enabled");
+  editor.innerHTML = "";
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -182,4 +201,52 @@ document.addEventListener("DOMContentLoaded", () => {
       editor.focus();
     }
   });
+
+  document.getElementById("run-btn").addEventListener("click", () => {
+    const code = editor.innerText;
+    console.log("Running code:", code);
+    // Add your code execution logic here
+  });
+
+  let currentGame = null;
+
+  document.getElementById("next-level-btn").addEventListener("click", () => {
+    if (currentGame && currentGame.currentLevel < 5) {
+      currentGame.loadLevel(currentGame.currentLevel + 1);
+      document.getElementById("level-dropdown").value =
+        currentGame.currentLevel;
+      updateLevelButtons();
+    }
+  });
+
+  document.getElementById("back-level-btn").addEventListener("click", () => {
+    if (currentGame && currentGame.currentLevel > 1) {
+      currentGame.loadLevel(currentGame.currentLevel - 1);
+      document.getElementById("level-dropdown").value =
+        currentGame.currentLevel;
+      updateLevelButtons();
+    }
+  });
+
+  document.getElementById("level-dropdown").addEventListener("change", (e) => {
+    if (currentGame) {
+      currentGame.loadLevel(parseInt(e.target.value));
+      updateLevelButtons();
+    }
+  });
+
+  function updateLevelButtons() {
+    const backBtn = document.getElementById("back-level-btn");
+    const nextBtn = document.getElementById("next-level-btn");
+
+    if (currentGame) {
+      backBtn.disabled = currentGame.currentLevel === 1;
+      nextBtn.disabled = currentGame.currentLevel === 5;
+    }
+  }
+
+  window.setCurrentGame = (game) => {
+    currentGame = game;
+    updateLevelButtons();
+  };
 });
