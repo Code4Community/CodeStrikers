@@ -24,15 +24,60 @@ body {
   background-size: contain;
 }
 
-/* Page Title */
 .page-title {
   text-align: center;
-  font-size: 36px;
-  color: #ff0000;
-  margin-bottom: 10px;
+  font-size: 42px;
   font-family: "Trebuchet MS", sans-serif;
-  letter-spacing: 1px;
-  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  letter-spacing: 2px;
+  margin: 0 auto; /* Remove vertical margin */
+  padding: 0; /* Remove vertical padding */
+  width: fit-content;
+  line-height: 1; /* Tighter vertical spacing */
+  background: none;
+  border: none;
+}
+
+/* Animated text */
+.page-title span {
+  position: relative;
+  z-index: 1;
+  font-weight: bold;
+
+  background: linear-gradient(
+    120deg,
+    #ffcccc 0%,
+    #ff4d4d 40%,
+    #b30000 60%,
+    #ff9999 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  animation: glowTextSwipe 6s ease-in-out infinite;
+  animation-delay: 1s;
+
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  padding: 0; /* No extra space inside the span */
+  line-height: 1; /* Ensures no extra vertical space from line height */
+}
+
+/* Slower gradient swipe with pause */
+@keyframes glowTextSwipe {
+  0% {
+    background-position: -100% center;
+  }
+  45% {
+    background-position: 100% center;
+  }
+  60% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: -100% center;
+  }
 }
 
 /* Layout Rows */
