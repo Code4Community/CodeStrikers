@@ -413,6 +413,10 @@ body {
   font-weight: bold;
 }
 
+#attacker {
+  display: none;
+}
+
 .instructions .level {
   margin-bottom: 15px;
   background-color: #ffffffcc;

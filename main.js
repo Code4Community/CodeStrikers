@@ -8,6 +8,7 @@ class Player {
     this.speed = 50; // Grid-based movement
     this.startX = 100; // Save starting position
     this.startY = 100;
+    this.image = document.getElementById("attacker");
   }
 
   reset() {
@@ -68,6 +69,7 @@ class Player {
   draw(context) {
     context.fillStyle = "black";
     context.fillRect(this.x, this.y, this.width, this.height);
+    context.drawImage(this.image, this.x, this.y);
   }
 
   update() {
