@@ -5,7 +5,64 @@ class Player {
     this.height = 100;
     this.x = 100;
     this.y = 100;
-    this.speed = 5;
+    this.speed = 50; // Grid-based movement
+    this.startX = 100; // Save starting position
+    this.startY = 100;
+  }
+
+  reset() {
+    this.x = this.startX;
+    this.y = this.startY;
+    console.log("Player reset to starting position");
+  }
+
+  moveRight() {
+    const newX = this.x + this.speed;
+    // Check boundary (canvas width - player width)
+    if (newX + this.width <= this.game.width) {
+      this.x = newX;
+      console.log(`Player moved right to x: ${this.x}`);
+    } else {
+      console.log(`Can't move right - boundary reached!`);
+    }
+  }
+
+  moveLeft() {
+    const newX = this.x - this.speed;
+    // Check boundary (left edge)
+    if (newX >= 0) {
+      this.x = newX;
+      console.log(`Player moved left to x: ${this.x}`);
+    } else {
+      console.log(`Can't move left - boundary reached!`);
+    }
+  }
+
+  moveUp() {
+    const newY = this.y - this.speed;
+    // Check boundary (top edge)
+    if (newY >= 0) {
+      this.y = newY;
+      console.log(`Player moved up to y: ${this.y}`);
+    } else {
+      console.log(`Can't move up - boundary reached!`);
+    }
+  }
+
+  moveDown() {
+    const newY = this.y + this.speed;
+    // Check boundary (canvas height - player height)
+    if (newY + this.height <= this.game.height) {
+      this.y = newY;
+      console.log(`Player moved down to y: ${this.y}`);
+    } else {
+      console.log(`Can't move down - boundary reached!`);
+    }
+  }
+
+  shootBall() {
+    this.x += this.speed * 4;
+    console.log("Ball shot!");
   }
 
   draw(context) {
@@ -14,7 +71,7 @@ class Player {
   }
 
   update() {
-    this.x += this.speed;
+    // No auto-movement anymore - controlled by user code
   }
 }
 
@@ -49,6 +106,7 @@ class Game {
     this.player = new Player(this);
     this.fieldLeft = new Field(this, "left");
     this.fieldRight = new Field(this, "right");
+    this.isExecuting = false;
   }
 
   render(context) {
@@ -63,6 +121,48 @@ class Game {
     this.player.x = 100;
     this.player.y = 100;
     console.log(`Level ${level} loaded`);
+  }
+
+  async executeUserCode(code) {
+    if (this.isExecuting) {
+      alert("Code is already running!");
+      return;
+    }
+
+    // Reset player to starting position before running code
+    this.player.reset();
+
+    this.isExecuting = true;
+
+    // Parse the code into commands
+    const commands = code
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    console.log("Executing commands:", commands);
+
+    // Execute each command with animation delay
+    for (const command of commands) {
+      await new Promise((resolve) => setTimeout(resolve, 400)); // 400ms delay between moves
+
+      if (command.includes("moveRight()")) {
+        this.player.moveRight();
+      } else if (command.includes("moveLeft()")) {
+        this.player.moveLeft();
+      } else if (command.includes("moveUp()")) {
+        this.player.moveUp();
+      } else if (command.includes("moveDown()")) {
+        this.player.moveDown();
+      } else if (command.includes("shootBall()")) {
+        this.player.shootBall();
+      } else {
+        console.warn(`Unknown command: ${command}`);
+      }
+    }
+
+    this.isExecuting = false;
+    console.log("Code execution complete!");
   }
 }
 
@@ -94,6 +194,67 @@ function startGame() {
 }
 
 const FUNCTIONS = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+
+function checkSyntaxErrors(code) {
+  const lines = code.split("\n");
+  const errors = [];
+
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+
+    // Skip empty lines
+    if (trimmedLine.length === 0) return;
+
+    // Check if line contains a valid function
+    let isValid = false;
+    for (const func of FUNCTIONS) {
+      if (trimmedLine === `${func}()`) {
+        isValid = true;
+        break;
+      }
+    }
+
+    if (!isValid) {
+      errors.push({
+        line: index + 1,
+        message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.map(
+          (f) => f + "()"
+        ).join(", ")}`,
+      });
+    }
+  });
+
+  return errors;
+}
+
+function updateLineNumbers() {
+  const editor = document.getElementById("game-textbox");
+  const lineNumbers = document.getElementById("line-numbers");
+
+  const lines = editor.innerText.split("\n");
+  const lineCount = lines.length;
+
+  let numbers = "";
+  for (let i = 1; i <= lineCount; i++) {
+    numbers += i + "\n";
+  }
+
+  lineNumbers.textContent = numbers;
+}
+
+function displaySyntaxErrors(errors) {
+  const errorDiv = document.getElementById("syntax-error");
+
+  if (errors.length === 0) {
+    errorDiv.style.display = "none";
+    return;
+  }
+
+  errorDiv.style.display = "block";
+  errorDiv.innerHTML = errors
+    .map((err) => `<strong>Line ${err.line}:</strong> ${err.message}`)
+    .join("<br>");
+}
 
 function escapeHtml(text) {
   const map = {
@@ -192,6 +353,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
       editor.dispatchEvent(new Event("input"));
     }
+
+    // Allow Enter key to create new lines
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+
+      // Insert a line break
+      const textNode = document.createTextNode("\n");
+      range.deleteContents();
+      range.insertNode(textNode);
+
+      // Move cursor after the newline
+      range.setStartAfter(textNode);
+      range.collapse(true);
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Trigger syntax highlighting
+      editor.dispatchEvent(new Event("input"));
+    }
   });
 
   document.getElementById("clear-btn").addEventListener("click", () => {
@@ -203,9 +388,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("run-btn").addEventListener("click", () => {
-    const code = editor.innerText;
+    const code = editor.innerText.trim();
+    const currentGame = window.currentGame;
+
+    if (!currentGame) {
+      alert("Please start the game first!");
+      return;
+    }
+
+    if (!code) {
+      alert("Please write some code first!");
+      return;
+    }
+
     console.log("Running code:", code);
-    // Add your code execution logic here
+
+    // Disable run button during execution
+    const runBtn = document.getElementById("run-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    runBtn.disabled = true;
+    clearBtn.disabled = true;
+    runBtn.textContent = "Running...";
+    runBtn.style.opacity = "0.6";
+
+    currentGame.executeUserCode(code).then(() => {
+      runBtn.disabled = false;
+      clearBtn.disabled = false;
+      runBtn.textContent = "Run";
+      runBtn.style.opacity = "1";
+    });
   });
 
   let currentGame = null;
@@ -247,6 +458,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.setCurrentGame = (game) => {
     currentGame = game;
+    window.currentGame = game; // Make it globally accessible
     updateLevelButtons();
   };
 });
