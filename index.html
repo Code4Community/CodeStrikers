@@ -8,6 +8,18 @@
   </head>
   <body>
     <img src="assets/attacker.png" alt="attacker" id="attacker" />
+    <img
+      src="assets/soccer.png"
+      alt="soccer ball"
+      id="soccer-ball"
+      style="display: none"
+    />
+    <img
+      src="assets/soccer_goal.png"
+      alt="goal field"
+      id="goal-field"
+      style="display: none"
+    />
     <div class="page-title"><span>Code Strikers</span></div>
     <div class="row">
       <canvas id="canvas1"></canvas>
@@ -36,6 +48,9 @@
         <div id="action-buttons" style="display: none">
           <div class="button-row">
             <button id="run-btn" class="green-btn">Run</button>
+            <button id="stop-btn" class="red-btn" style="display: none">
+              Stop
+            </button>
             <button id="clear-btn" class="red-btn">Clear</button>
           </div>
           <div class="level-nav-row">

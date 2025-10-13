@@ -1,10 +1,88 @@
-class Player {
+class SoccerBall {
+  stickToPlayer(player) {
+    // Stick ball to player's feet (centered horizontally)
+    const feet = player.getFeetBox();
+    // Place ball just below the player's feet, centered horizontally
+    this.x = feet.x + (feet.width - this.width) / 2;
+    this.y = feet.y + feet.height - this.height / 2;
+    // Prevent ball from going off canvas
+    this.x = Math.max(0, Math.min(this.x, this.game.width - this.width));
+    this.y = Math.max(0, Math.min(this.y, this.game.height - this.height));
+  }
   constructor(game) {
     this.game = game;
-    this.width = 100;
-    this.height = 100;
+    this.width = 50;
+    this.height = 50;
+    // Place ball dead center of the field
+    this.x = (game.width - this.width) / 2;
+    this.y = (game.height - this.height) / 2;
+    this.image = document.getElementById("soccer-ball");
+    this.isStuck = false;
+  }
+  // Returns a rectangle representing the ball's bounding box
+  getBox() {
+    return {
+      x: this.x,
+      y: this.y,
+      width: this.width,
+      height: this.height,
+    };
+  }
+
+  draw(context) {
+    if (this.image) {
+      context.save();
+      // Rolling effect: rotate if _rollingAngle is set
+      if (this._rollingAngle) {
+        context.translate(this.x + this.width / 2, this.y + this.height / 2);
+        context.rotate(this._rollingAngle);
+        context.drawImage(
+          this.image,
+          -this.width / 2,
+          -this.height / 2,
+          this.width,
+          this.height
+        );
+      } else {
+        context.drawImage(this.image, this.x, this.y, this.width, this.height);
+      }
+      context.restore();
+    }
+  }
+}
+class Player {
+  // Returns a rectangle representing the player's feet
+  getFeetBox() {
+    // Shrink feet box for more precise collision
+    const feetHeight = 18;
+    const feetWidth = this.width * 0.7;
+    return {
+      x: this.x + (this.width - feetWidth) / 2,
+      y: this.y + this.height - feetHeight,
+      width: feetWidth,
+      height: feetHeight,
+    };
+  }
+  // Returns a rectangle representing the ball's bounding box
+  getBox() {
+    // Shrink ball box for more precise collision
+    const boxSize = this.width * 0.7;
+    return {
+      x: this.x + (this.width - boxSize) / 2,
+      y: this.y + (this.height - boxSize) / 2,
+      width: boxSize,
+      height: boxSize,
+    };
+  }
+  constructor(game) {
+    this.game = game;
+    this.width = 90; // Make black box bigger
+    this.height = 200;
+    // Use default values, will be set by Game after fields are created
     this.x = 100;
     this.y = 100;
+    this.startX = this.x;
+    this.startY = this.y;
     this.speed = 50; // Grid-based movement
     this.startX = 100; // Save starting position
     this.startY = 100;
@@ -14,62 +92,131 @@ class Player {
   reset() {
     this.x = this.startX;
     this.y = this.startY;
+    if (this.game.soccerBall) {
+      // Reset ball to center
+      this.game.soccerBall.x =
+        (this.game.width - this.game.soccerBall.width) / 2;
+      this.game.soccerBall.y =
+        (this.game.height - this.game.soccerBall.height) / 2;
+      this.game.soccerBall.isStuck = false;
+    }
     console.log("Player reset to starting position");
   }
 
-  moveRight() {
-    const newX = this.x + this.speed;
-    // Check boundary (canvas width - player width)
-    if (newX + this.width <= this.game.width) {
-      this.x = newX;
+  async moveRight() {
+    const targetX = this.x + this.speed;
+    if (targetX + this.width <= this.game.width) {
+      const steps = 16;
+      const dx = (targetX - this.x) / steps;
+      for (let i = 0; i < steps; i++) {
+        this.x += dx;
+        if (this.game.soccerBall.isStuck) {
+          this.game.soccerBall.stickToPlayer(this);
+        }
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      this.x = targetX;
+      if (this.game.soccerBall.isStuck) {
+        this.game.soccerBall.stickToPlayer(this);
+      }
       console.log(`Player moved right to x: ${this.x}`);
     } else {
       console.log(`Can't move right - boundary reached!`);
     }
   }
 
-  moveLeft() {
-    const newX = this.x - this.speed;
-    // Check boundary (left edge)
-    if (newX >= 0) {
-      this.x = newX;
+  async moveLeft() {
+    const targetX = this.x - this.speed;
+    if (targetX >= 0) {
+      const steps = 16;
+      const dx = (targetX - this.x) / steps;
+      for (let i = 0; i < steps; i++) {
+        this.x += dx;
+        if (this.game.soccerBall.isStuck) {
+          this.game.soccerBall.stickToPlayer(this);
+        }
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      this.x = targetX;
+      if (this.game.soccerBall.isStuck) {
+        this.game.soccerBall.stickToPlayer(this);
+      }
       console.log(`Player moved left to x: ${this.x}`);
     } else {
       console.log(`Can't move left - boundary reached!`);
     }
   }
 
-  moveUp() {
-    const newY = this.y - this.speed;
-    // Check boundary (top edge)
-    if (newY >= 0) {
-      this.y = newY;
+  async moveUp() {
+    const targetY = this.y - this.speed;
+    if (targetY >= 0) {
+      const steps = 16;
+      const dy = (targetY - this.y) / steps;
+      for (let i = 0; i < steps; i++) {
+        this.y += dy;
+        if (this.game.soccerBall.isStuck) {
+          this.game.soccerBall.stickToPlayer(this);
+        }
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      this.y = targetY;
+      if (this.game.soccerBall.isStuck) {
+        this.game.soccerBall.stickToPlayer(this);
+      }
       console.log(`Player moved up to y: ${this.y}`);
     } else {
       console.log(`Can't move up - boundary reached!`);
     }
   }
 
-  moveDown() {
-    const newY = this.y + this.speed;
-    // Check boundary (canvas height - player height)
-    if (newY + this.height <= this.game.height) {
-      this.y = newY;
+  async moveDown() {
+    const targetY = this.y + this.speed;
+    if (targetY + this.height <= this.game.height) {
+      const steps = 16;
+      const dy = (targetY - this.y) / steps;
+      for (let i = 0; i < steps; i++) {
+        this.y += dy;
+        if (this.game.soccerBall.isStuck) {
+          this.game.soccerBall.stickToPlayer(this);
+        }
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      this.y = targetY;
+      if (this.game.soccerBall.isStuck) {
+        this.game.soccerBall.stickToPlayer(this);
+      }
       console.log(`Player moved down to y: ${this.y}`);
     } else {
       console.log(`Can't move down - boundary reached!`);
     }
   }
 
-  shootBall() {
-    this.x += this.speed * 4;
-    console.log("Ball shot!");
+  async shootBall() {
+    // Only shoot if ball is stuck
+    if (this.game.soccerBall.isStuck) {
+      this.game.soccerBall.isStuck = false;
+      const ball = this.game.soccerBall;
+      const spaces = this.speed * 4; // Move ball 4 spaces right
+      const frames = 16;
+      const dx = spaces / frames;
+      let angle = 0;
+      for (let i = 0; i < frames; i++) {
+        ball.x += dx;
+        // Rolling effect: rotate ball
+        ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 8;
+        angle = ball._rollingAngle;
+        // Clamp ball to canvas
+        ball.x = Math.min(ball.x, this.game.width - ball.width);
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      ball._rollingAngle = 0;
+      console.log("Ball shot!");
+    }
   }
 
   draw(context) {
-    context.fillStyle = "black";
-    context.fillRect(this.x, this.y, this.width, this.height);
-    context.drawImage(this.image, this.x, this.y);
+    // Draw image scaled to player size (no black border)
+    context.drawImage(this.image, this.x, this.y, this.width, this.height);
   }
 
   update() {
@@ -80,52 +227,98 @@ class Player {
 class Field {
   constructor(game, side) {
     this.game = game;
-    this.width = 300;
-    this.height = 200;
+    this.width = 320; // Goal width
+    this.height = 400; // Goal height
     this.side = side;
+    this.image = document.getElementById("goal-field");
 
+    const edgeOffset = -80; // Move a bit back to line up with white line
     if (side === "left") {
-      this.x = 1;
-      this.y = 200;
+      this.x = edgeOffset;
+      this.y = (this.game.height - this.height) / 2;
     } else {
-      this.x = game.width - this.width - 1;
-      this.y = 200;
+      this.x = this.game.width - this.width - edgeOffset;
+      this.y = (this.game.height - this.height) / 2;
     }
   }
 
   draw(context) {
-    context.fillStyle = "blue";
-    context.fillRect(this.x, this.y, this.width, this.height);
+    if (this.image) {
+      context.save();
+      if (this.side === "left") {
+        // Rotate 180 degrees for left field
+        context.translate(this.x + this.width / 2, this.y + this.height / 2);
+        context.rotate(Math.PI);
+        context.drawImage(
+          this.image,
+          -this.width / 2,
+          -this.height / 2,
+          this.width,
+          this.height
+        );
+      } else {
+        // Right field, no rotation
+        context.drawImage(this.image, this.x, this.y, this.width, this.height);
+      }
+      context.restore();
+    }
   }
 }
 
 class Game {
+  // Helper: check if two rectangles overlap
+  static rectsOverlap(a, b) {
+    return (
+      a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y
+    );
+  }
   constructor(canvas) {
     this.canvas = canvas;
     this.width = this.canvas.width;
     this.height = this.canvas.height;
     this.currentLevel = 1;
-    this.player = new Player(this);
     this.fieldLeft = new Field(this, "left");
     this.fieldRight = new Field(this, "right");
+    this.player = new Player(this);
+    this.soccerBall = new SoccerBall(this);
+    // Set player position after fields are created
+    this.player.x = this.fieldLeft.x + this.fieldLeft.width - 30; // Move 30px more left
+    this.player.y =
+      this.fieldLeft.y + (this.fieldLeft.height - this.player.height) / 2;
+    this.player.startX = this.player.x;
+    this.player.startY = this.player.y;
     this.isExecuting = false;
   }
 
   render(context) {
     this.fieldLeft.draw(context);
     this.fieldRight.draw(context);
+
+    // Collision detection: check if player's feet touch ball
+    const feetBox = this.player.getFeetBox();
+    const ballBox = this.soccerBall.getBox();
+    this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
+
     this.player.draw(context);
+    this.soccerBall.draw(context);
     this.player.update();
   }
 
   loadLevel(level) {
     this.currentLevel = level;
-    this.player.x = 100;
-    this.player.y = 100;
+    // Place player right in front of left goal field on level load
+    this.player.x = this.fieldLeft.x + this.fieldLeft.width - 30; // Move 30px more left
+    this.player.y =
+      this.fieldLeft.y + (this.fieldLeft.height - this.player.height) / 2;
+    this.player.startX = this.player.x;
+    this.player.startY = this.player.y;
     console.log(`Level ${level} loaded`);
   }
 
-  async executeUserCode(code) {
+  async executeUserCode(code, shouldStop) {
     if (this.isExecuting) {
       alert("Code is already running!");
       return;
@@ -141,23 +334,24 @@ class Game {
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
-
     console.log("Executing commands:", commands);
 
     // Execute each command with animation delay
     for (const command of commands) {
+      if (shouldStop && shouldStop()) break;
       await new Promise((resolve) => setTimeout(resolve, 400)); // 400ms delay between moves
+      if (shouldStop && shouldStop()) break;
 
       if (command.includes("moveRight()")) {
-        this.player.moveRight();
+        await this.player.moveRight();
       } else if (command.includes("moveLeft()")) {
-        this.player.moveLeft();
+        await this.player.moveLeft();
       } else if (command.includes("moveUp()")) {
-        this.player.moveUp();
+        await this.player.moveUp();
       } else if (command.includes("moveDown()")) {
-        this.player.moveDown();
+        await this.player.moveDown();
       } else if (command.includes("shootBall()")) {
-        this.player.shootBall();
+        await this.player.shootBall();
       } else {
         console.warn(`Unknown command: ${command}`);
       }
@@ -389,7 +583,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.getElementById("run-btn").addEventListener("click", () => {
+  const runBtn = document.getElementById("run-btn");
+  const stopBtn = document.getElementById("stop-btn");
+  const clearBtn = document.getElementById("clear-btn");
+  let stopRequested = false;
+
+  runBtn.addEventListener("click", () => {
     const code = editor.innerText.trim();
     const currentGame = window.currentGame;
 
@@ -397,28 +596,38 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Please start the game first!");
       return;
     }
-
     if (!code) {
       alert("Please write some code first!");
       return;
     }
 
-    console.log("Running code:", code);
-
-    // Disable run button during execution
-    const runBtn = document.getElementById("run-btn");
-    const clearBtn = document.getElementById("clear-btn");
-    runBtn.disabled = true;
+    stopRequested = false;
+    runBtn.style.display = "none";
+    stopBtn.style.display = "inline-block";
     clearBtn.disabled = true;
-    runBtn.textContent = "Running...";
-    runBtn.style.opacity = "0.6";
 
-    currentGame.executeUserCode(code).then(() => {
-      runBtn.disabled = false;
+    currentGame
+      .executeUserCode(code, () => stopRequested)
+      .then(() => {
+        runBtn.style.display = "inline-block";
+        stopBtn.style.display = "none";
+        clearBtn.disabled = false;
+      });
+  });
+
+  stopBtn.addEventListener("click", () => {
+    stopRequested = true;
+    stopBtn.disabled = true;
+    const currentGame = window.currentGame;
+    if (currentGame) {
+      currentGame.player.reset();
+    }
+    setTimeout(() => {
+      runBtn.style.display = "inline-block";
+      stopBtn.style.display = "none";
+      stopBtn.disabled = false;
       clearBtn.disabled = false;
-      runBtn.textContent = "Run";
-      runBtn.style.opacity = "1";
-    });
+    }, 300);
   });
 
   let currentGame = null;
