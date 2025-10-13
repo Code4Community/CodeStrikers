@@ -1,3 +1,106 @@
+/* Goal Popup Styles */
+.goal-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.goal-popup-content {
+  background: linear-gradient(120deg, #d4ffdf 0%, #90ee90 40%, #7fdb7f 100%);
+  color: #1a5c1a;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 40px 48px;
+  text-align: center;
+  animation: popupFadeIn 0.5s ease;
+}
+.goal-popup-content h2 {
+  font-size: 2.2em;
+  margin-bottom: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  background: linear-gradient(
+    120deg,
+    #ffcccc 0%,
+    #ff4d4d 40%,
+    #b30000 60%,
+    #ff9999 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glowTextSwipe 3s ease-in-out infinite;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  padding: 0;
+  line-height: 1;
+}
+.goal-popup-content h2.goal-unique-effect {
+  font-size: 2.2em;
+  margin-bottom: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #90ee90 0%, #2e8b57 50%, #d4ffdf 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goalTextSweep 2.5s linear infinite;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  padding: 0;
+  line-height: 1;
+}
+.goal-popup-content p {
+  font-size: 1.3em;
+  margin-bottom: 24px;
+  color: #d32f2f;
+}
+.goal-popup-content button {
+  margin: 0 12px;
+}
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes glowTextSwipe {
+  0% {
+    background-position: -100% center;
+  }
+  45% {
+    background-position: 100% center;
+  }
+  60% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: -100% center;
+  }
+}
+@keyframes goalTextSweep {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
 /* Global Styles */
 * {
   margin: 0;
@@ -11,8 +114,79 @@ body {
   display: flex;
   flex-direction: column;
   padding-top: 30px;
-  background-color: #f4fff6;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(
+    -45deg,
+    #a8e6cf,
+    #88d8b0,
+    #69c2a0,
+    #7fdb7f,
+    #90ee90
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+      circle at 20% 30%,
+      rgba(168, 230, 207, 0.3) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(127, 219, 127, 0.3) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(144, 238, 144, 0.2) 0%,
+      transparent 60%
+    );
+  animation: glowPulseSmooth 10s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes glowPulseSmooth {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translate(-5%, 5%) scale(1.05);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translate(5%, -5%) scale(1.08);
+    opacity: 0.5;
+  }
 }
 
 /* Canvas */
@@ -441,84 +615,4 @@ body {
   font-size: 17px;
   color: #333;
   line-height: 1.5;
-}
-body {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: 30px;
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(
-    -45deg,
-    #a8e6cf,
-    #88d8b0,
-    #69c2a0,
-    #7fdb7f,
-    #90ee90
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-  position: relative;
-  overflow-x: hidden;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-      circle at 20% 30%,
-      rgba(168, 230, 207, 0.3) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 80% 70%,
-      rgba(127, 219, 127, 0.3) 0%,
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(144, 238, 144, 0.2) 0%,
-      transparent 60%
-    );
-  animation: glowPulseSmooth 10s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes glowPulseSmooth {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.4;
-  }
-  33% {
-    transform: translate(-5%, 5%) scale(1.05);
-    opacity: 0.6;
-  }
-  66% {
-    transform: translate(5%, -5%) scale(1.08);
-    opacity: 0.5;
-  }
 }

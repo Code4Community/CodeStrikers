@@ -302,9 +302,73 @@ class Game {
     const ballBox = this.soccerBall.getBox();
     this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
 
+    // Goal collision detection
+    const leftGoalBox = {
+      x: this.fieldLeft.x,
+      y: this.fieldLeft.y,
+      width: this.fieldLeft.width,
+      height: this.fieldLeft.height,
+    };
+    const rightGoalBox = {
+      x: this.fieldRight.x,
+      y: this.fieldRight.y,
+      width: this.fieldRight.width,
+      height: this.fieldRight.height,
+    };
+    // Only show popup if not already shown and only once per goal event
+    if (
+      !this._goalPopupShown &&
+      (Game.rectsOverlap(ballBox, leftGoalBox) ||
+        Game.rectsOverlap(ballBox, rightGoalBox))
+    ) {
+      this._goalPopupShown = true;
+      this.showGoalPopup();
+    }
+    // Reset popup flag if ball is not in goal
+    if (
+      !(
+        Game.rectsOverlap(ballBox, leftGoalBox) ||
+        Game.rectsOverlap(ballBox, rightGoalBox)
+      )
+    ) {
+      this._goalPopupShown = false;
+    }
+
     this.player.draw(context);
     this.soccerBall.draw(context);
     this.player.update();
+  }
+
+  showGoalPopup() {
+    if (document.getElementById("goal-popup")) return; // Only one popup at a time
+    const popup = document.createElement("div");
+    popup.id = "goal-popup";
+    popup.className = "goal-popup";
+    const nextLevel = Math.min(this.currentLevel + 1, 5);
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">Great job!</h2>
+        <p>Level: <span id="goal-level-label">Level ${nextLevel}</span> complete</p>
+        <button id="next-level-popup-btn" class="green-btn">Next Level</button>
+        <button id="close-popup-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+    document.getElementById("next-level-popup-btn").onclick = () => {
+      popup.remove();
+      if (this.currentLevel < 5) {
+        this.loadLevel(nextLevel);
+        // Clear code box
+        const editor = document.getElementById("game-textbox");
+        if (editor) editor.innerHTML = "";
+        // Update level label in dropdown
+        const dropdown = document.getElementById("level-dropdown");
+        if (dropdown) dropdown.value = nextLevel;
+      }
+    };
+    document.getElementById("close-popup-btn").onclick = () => {
+      popup.remove();
+    };
   }
 
   loadLevel(level) {
