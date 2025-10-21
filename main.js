@@ -11,8 +11,8 @@ class SoccerBall {
   }
   constructor(game) {
     this.game = game;
-    this.width = 50;
-    this.height = 50;
+    this.width = 25;
+    this.height = 25;
     // Place ball dead center of the field
     this.x = (game.width - this.width) / 2;
     this.y = (game.height - this.height) / 2;
@@ -54,8 +54,8 @@ class Player {
   // Returns a rectangle representing the player's feet
   getFeetBox() {
     // Shrink feet box for more precise collision
-    const feetHeight = 18;
-    const feetWidth = this.width * 0.7;
+    const feetHeight = 10;
+    const feetWidth = this.width * 0.5;
     return {
       x: this.x + (this.width - feetWidth) / 2,
       y: this.y + this.height - feetHeight,
@@ -76,14 +76,14 @@ class Player {
   }
   constructor(game) {
     this.game = game;
-    this.width = 90; // Make black box bigger
-    this.height = 200;
+    this.width = 50; // Make black box bigger
+    this.height = 100;
     // Use default values, will be set by Game after fields are created
     this.x = 100;
     this.y = 100;
     this.startX = this.x;
     this.startY = this.y;
-    this.speed = 50; // Grid-based movement
+    this.speed = 35; // Grid-based movement
     this.startX = 100; // Save starting position
     this.startY = 100;
     this.image = document.getElementById("attacker");
@@ -94,10 +94,8 @@ class Player {
     this.y = this.startY;
     if (this.game.soccerBall) {
       // Reset ball to center
-      this.game.soccerBall.x =
-        (this.game.width - this.game.soccerBall.width) / 2;
-      this.game.soccerBall.y =
-        (this.game.height - this.game.soccerBall.height) / 2;
+      this.game.soccerBall.x = (this.game.width - this.game.soccerBall.width) / 2;
+      this.game.soccerBall.y = (this.game.height - this.game.soccerBall.height) / 2;
       this.game.soccerBall.isStuck = false;
     }
     console.log("Player reset to starting position");
@@ -106,7 +104,7 @@ class Player {
   async moveRight() {
     const targetX = this.x + this.speed;
     if (targetX + this.width <= this.game.width) {
-      const steps = 16;
+      const steps = 8;
       const dx = (targetX - this.x) / steps;
       for (let i = 0; i < steps; i++) {
         this.x += dx;
@@ -150,7 +148,7 @@ class Player {
   async moveUp() {
     const targetY = this.y - this.speed;
     if (targetY >= 0) {
-      const steps = 16;
+      const steps = 8;
       const dy = (targetY - this.y) / steps;
       for (let i = 0; i < steps; i++) {
         this.y += dy;
@@ -227,10 +225,10 @@ class Player {
 class Field {
   constructor(game, side) {
     this.game = game;
-    this.width = 320; // Goal width
-    this.height = 400; // Goal height
+    // Make goals smaller so they're easier to aim at
+    this.width = 200; // Goal width (reduced from 320)
+    this.height = 300; // Goal height (reduced from 400)
     this.side = side;
-    this.image = document.getElementById("goal-field");
 
     const edgeOffset = -80; // Move a bit back to line up with white line
     if (side === "left") {
