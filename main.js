@@ -18,6 +18,7 @@ class SoccerBall {
     this.y = (game.height - this.height) / 2;
     this.image = document.getElementById("soccer-ball");
     this.isStuck = false;
+    this.extraDistanceMultiplier = 1.5;
   }
   // Returns a rectangle representing the ball's bounding box
   getBox() {
@@ -87,6 +88,7 @@ class Player {
     this.startX = 100; // Save starting position
     this.startY = 100;
     this.image = document.getElementById("attacker");
+    this.extraDistanceMultiplier = 1.5;
   }
 
   reset() {
@@ -102,7 +104,7 @@ class Player {
   }
 
   async moveRight() {
-    const targetX = this.x + this.speed;
+    const targetX = this.x + this.speed * this.extraDistanceMultiplier;
     if (targetX + this.width <= this.game.width) {
       const steps = 8;
       const dx = (targetX - this.x) / steps;
@@ -124,7 +126,7 @@ class Player {
   }
 
   async moveLeft() {
-    const targetX = this.x - this.speed;
+    const targetX = this.x - this.speed * this.extraDistanceMultiplier;
     if (targetX >= 0) {
       const steps = 16;
       const dx = (targetX - this.x) / steps;
@@ -146,7 +148,7 @@ class Player {
   }
 
   async moveUp() {
-    const targetY = this.y - this.speed;
+    const targetY = this.y - this.speed * this.extraDistanceMultiplier;
     if (targetY >= 0) {
       const steps = 8;
       const dy = (targetY - this.y) / steps;
@@ -168,7 +170,7 @@ class Player {
   }
 
   async moveDown() {
-    const targetY = this.y + this.speed;
+    const targetY = this.y + this.speed * this.extraDistanceMultiplier;
     if (targetY + this.height <= this.game.height) {
       const steps = 16;
       const dy = (targetY - this.y) / steps;
