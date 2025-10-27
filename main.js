@@ -18,7 +18,6 @@ class SoccerBall {
     this.y = (game.height - this.height) / 2;
     this.image = document.getElementById("soccer-ball");
     this.isStuck = false;
-    this.extraDistanceMultiplier = 1.5;
   }
   // Returns a rectangle representing the ball's bounding box
   getBox() {
@@ -84,11 +83,10 @@ class Player {
     this.y = 100;
     this.startX = this.x;
     this.startY = this.y;
-    this.speed = 35; // Grid-based movement
+    this.speed = 55; // Grid-based movement
     this.startX = 100; // Save starting position
     this.startY = 100;
     this.image = document.getElementById("attacker");
-    this.extraDistanceMultiplier = 1.5;
   }
 
   reset() {
@@ -104,7 +102,7 @@ class Player {
   }
 
   async moveRight() {
-    const targetX = this.x + this.speed * this.extraDistanceMultiplier;
+    const targetX = this.x + this.speed;
     if (targetX + this.width <= this.game.width) {
       const steps = 8;
       const dx = (targetX - this.x) / steps;
@@ -126,7 +124,7 @@ class Player {
   }
 
   async moveLeft() {
-    const targetX = this.x - this.speed * this.extraDistanceMultiplier;
+    const targetX = this.x - this.speed;
     if (targetX >= 0) {
       const steps = 16;
       const dx = (targetX - this.x) / steps;
@@ -148,7 +146,7 @@ class Player {
   }
 
   async moveUp() {
-    const targetY = this.y - this.speed * this.extraDistanceMultiplier;
+    const targetY = this.y - this.speed;
     if (targetY >= 0) {
       const steps = 8;
       const dy = (targetY - this.y) / steps;
@@ -170,7 +168,7 @@ class Player {
   }
 
   async moveDown() {
-    const targetY = this.y + this.speed * this.extraDistanceMultiplier;
+    const targetY = this.y + this.speed;
     if (targetY + this.height <= this.game.height) {
       const steps = 16;
       const dy = (targetY - this.y) / steps;
@@ -228,7 +226,7 @@ class Field {
   constructor(game, side) {
     this.game = game;
     // Make goals smaller so they're easier to aim at
-    this.width = 200; // Goal width (reduced from 320)
+    this.width = 120; // Goal width (reduced from 320)
     this.height = 300; // Goal height (reduced from 400)
     this.side = side;
 
@@ -284,10 +282,9 @@ class Game {
     this.fieldRight = new Field(this, "right");
     this.player = new Player(this);
     this.soccerBall = new SoccerBall(this);
-    // Set player position after fields are created
-    this.player.x = this.fieldLeft.x + this.fieldLeft.width - 30; // Move 30px more left
-    this.player.y =
-      this.fieldLeft.y + (this.fieldLeft.height - this.player.height) / 2;
+    // Set player position to fixed coordinates
+    this.player.x = 200;
+    this.player.y = 270;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
     this.isExecuting = false;
@@ -389,10 +386,9 @@ class Game {
 
   loadLevel(level) {
     this.currentLevel = level;
-    // Place player right in front of left goal field on level load
-    this.player.x = this.fieldLeft.x + this.fieldLeft.width - 30; // Move 30px more left
-    this.player.y =
-      this.fieldLeft.y + (this.fieldLeft.height - this.player.height) / 2;
+    // Place player at fixed coordinates
+    this.player.x = 200;
+    this.player.y = 270;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
     console.log(`Level ${level} loaded`);
