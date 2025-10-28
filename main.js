@@ -445,6 +445,7 @@ class Game {
       // Hide textbox
       const editor = document.getElementById("game-textbox");
       if (editor) editor.style.display = "none";
+      return; // Do NOT show popup for 1v1
     }
     // Call original popup logic
     const popup = document.createElement("div");
@@ -724,10 +725,9 @@ function startGame() {
   animate();
 }
 
-// Patch showGoalPopup to update scores and reset 1v1 after goal
+// Patch showGoalPopup to update scores and reset 1v1 after goal, but no popup for 1v1
 const originalShowGoalPopup = Game.prototype.showGoalPopup;
 Game.prototype.showGoalPopup = function () {
-  if (document.getElementById("goal-popup")) return; // Only one popup at a time
   if (this.currentLevel === 6) {
     // Ball in right goal: Player scores, left goal: Defender scores
     const ballBox = this.soccerBall.getBox();
@@ -759,6 +759,7 @@ Game.prototype.showGoalPopup = function () {
     // Hide textbox
     const editor = document.getElementById("game-textbox");
     if (editor) editor.style.display = "none";
+    return; // Do NOT show popup for 1v1
   }
   // Call original popup logic
   const popup = document.createElement("div");
