@@ -93,9 +93,6 @@ class Player {
     this.x = this.startX;
     this.y = this.startY;
     if (this.game.soccerBall) {
-      // Reset ball to center
-      this.game.soccerBall.x = (this.game.width - this.game.soccerBall.width) / 2;
-      this.game.soccerBall.y = (this.game.height - this.game.soccerBall.height) / 2;
       this.game.soccerBall.isStuck = false;
     }
     console.log("Player reset to starting position");
@@ -222,6 +219,23 @@ class Player {
   }
 }
 
+class Defender {
+  constructor(game, x, y) {
+    this.game = game;
+    this.width = 60;
+    this.height = 70;
+    this.x = x;
+    this.y = y;
+    this.image = document.getElementById("defender");
+  }
+
+  draw(context) {
+    if (this.image) {
+      context.drawImage(this.image, this.x, this.y, this.width, this.height);
+    }
+  }
+}
+
 class Field {
   constructor(game, side) {
     this.game = game;
@@ -282,6 +296,7 @@ class Game {
     this.fieldRight = new Field(this, "right");
     this.player = new Player(this);
     this.soccerBall = new SoccerBall(this);
+    this.defenders = [];
     // Set player position to fixed coordinates
     this.player.x = 200;
     this.player.y = 270;
@@ -347,6 +362,11 @@ class Game {
       this._goalPopupActive = false;
     }
 
+    // Draw defenders only for level 2
+    if (this.currentLevel === 2 && this.defenders && this.defenders.length > 0) {
+      this.defenders.forEach(defender => defender.draw(context));
+    }
+    
     this.player.draw(context);
     this.soccerBall.draw(context);
     this.player.update();
@@ -386,11 +406,32 @@ class Game {
 
   loadLevel(level) {
     this.currentLevel = level;
+    // Clear existing defenders
+    this.defenders = [];
+    
     // Place player at fixed coordinates
     this.player.x = 200;
     this.player.y = 270;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
+    
+    // Add defenders for level 2
+    if (level === 2) {
+      // Two defenders in front of the goal, positioned to block shots
+      this.defenders.push(new Defender(this, 310, 250));
+      this.defenders.push(new Defender(this, 600, 250));
+      
+      // Place ball on the field in level 2 - positioned between player and goal
+      this.soccerBall.x = 430;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+      this.soccerBall.isStuck = false;
+    } else {
+      // Default: center ball for other levels
+      this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+      this.soccerBall.isStuck = false;
+    }
+    
     console.log(`Level ${level} loaded`);
   }
 
@@ -451,22 +492,6 @@ function startGame() {
   window.setCurrentGame(game);
 
   game.loadLevel(selectedLevel);
-  // Set ball position differently for level 2
-  if (selectedLevel === 2) {
-    // Place ball near right goal for level 2
-    game.soccerBall.x =
-      game.fieldRight.x + game.fieldRight.width / 2 - game.soccerBall.width / 2;
-    game.soccerBall.y =
-      game.fieldRight.y +
-      game.fieldRight.height / 2 -
-      game.soccerBall.height / 2;
-    game.soccerBall.isStuck = false;
-  } else {
-    // Default: center for other levels
-    game.soccerBall.x = (game.width - game.soccerBall.width) / 2;
-    game.soccerBall.y = (game.height - game.soccerBall.height) / 2;
-    game.soccerBall.isStuck = false;
-  }
 
   document.getElementById("start-btn").style.display = "none";
   document.getElementById("action-buttons").style.display = "flex";
@@ -734,25 +759,9 @@ document.addEventListener("DOMContentLoaded", () => {
       currentGame.loadLevel(currentGame.currentLevel + 1);
       document.getElementById("level-dropdown").value =
         currentGame.currentLevel;
-      // Reset player and ball positions
+      // Reset player
       currentGame.player.reset();
       if (currentGame.soccerBall) {
-        if (currentGame.currentLevel === 2) {
-          currentGame.soccerBall.x =
-            currentGame.fieldRight.x +
-            currentGame.fieldRight.width / 2 -
-            currentGame.soccerBall.width / 2;
-          currentGame.soccerBall.y =
-            currentGame.fieldRight.y +
-            currentGame.fieldRight.height / 2 -
-            currentGame.soccerBall.height / 2;
-        } else {
-          currentGame.soccerBall.x =
-            (currentGame.width - currentGame.soccerBall.width) / 2;
-          currentGame.soccerBall.y =
-            (currentGame.height - currentGame.soccerBall.height) / 2;
-        }
-        currentGame.soccerBall.isStuck = false;
         // Reset popup flags and initial ball position
         currentGame._goalPopupShown = false;
         currentGame._goalPopupActive = false;
@@ -771,25 +780,9 @@ document.addEventListener("DOMContentLoaded", () => {
       currentGame.loadLevel(currentGame.currentLevel - 1);
       document.getElementById("level-dropdown").value =
         currentGame.currentLevel;
-      // Reset player and ball positions
+      // Reset player
       currentGame.player.reset();
       if (currentGame.soccerBall) {
-        if (currentGame.currentLevel === 2) {
-          currentGame.soccerBall.x =
-            currentGame.fieldRight.x +
-            currentGame.fieldRight.width / 2 -
-            currentGame.soccerBall.width / 2;
-          currentGame.soccerBall.y =
-            currentGame.fieldRight.y +
-            currentGame.fieldRight.height / 2 -
-            currentGame.soccerBall.height / 2;
-        } else {
-          currentGame.soccerBall.x =
-            (currentGame.width - currentGame.soccerBall.width) / 2;
-          currentGame.soccerBall.y =
-            (currentGame.height - currentGame.soccerBall.height) / 2;
-        }
-        currentGame.soccerBall.isStuck = false;
         // Reset popup flags and initial ball position
         currentGame._goalPopupShown = false;
         currentGame._goalPopupActive = false;
@@ -806,25 +799,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
     if (currentGame) {
       currentGame.loadLevel(parseInt(e.target.value));
-      // Reset player and ball positions
+      // Reset player
       currentGame.player.reset();
       if (currentGame.soccerBall) {
-        if (currentGame.currentLevel === 2) {
-          currentGame.soccerBall.x =
-            currentGame.fieldRight.x +
-            currentGame.fieldRight.width / 2 -
-            currentGame.soccerBall.width / 2;
-          currentGame.soccerBall.y =
-            currentGame.fieldRight.y +
-            currentGame.fieldRight.height / 2 -
-            currentGame.soccerBall.height / 2;
-        } else {
-          currentGame.soccerBall.x =
-            (currentGame.width - currentGame.soccerBall.width) / 2;
-          currentGame.soccerBall.y =
-            (currentGame.height - currentGame.soccerBall.height) / 2;
-        }
-        currentGame.soccerBall.isStuck = false;
         // Reset popup flags and initial ball position
         currentGame._goalPopupShown = false;
         currentGame._goalPopupActive = false;

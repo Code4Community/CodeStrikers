@@ -591,6 +591,10 @@ body > * {
   display: none;
 }
 
+#defender {
+  display: none;
+}
+
 .instructions .level {
   margin-bottom: 15px;
   background-color: #ffffffcc;
