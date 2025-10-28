@@ -414,6 +414,39 @@ class Game {
 
   showGoalPopup() {
     if (document.getElementById("goal-popup")) return; // Only one popup at a time
+    if (this.currentLevel === 6) {
+      // Ball in right goal: Player scores, left goal: Defender scores
+      const ballBox = this.soccerBall.getBox();
+      const leftGoalBox = {
+        x: this.fieldLeft.x,
+        y: this.fieldLeft.y,
+        width: this.fieldLeft.width,
+        height: this.fieldLeft.height,
+      };
+      const rightGoalBox = {
+        x: this.fieldRight.x,
+        y: this.fieldRight.y,
+        width: this.fieldRight.width,
+        height: this.fieldRight.height,
+      };
+      if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+        this.playerScore++;
+        document.getElementById("score-player").textContent = this.playerScore;
+      } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+        this.defenderScore++;
+        document.getElementById("score-defender").textContent =
+          this.defenderScore;
+      }
+      // After scoring, reset the level to keep both players and ball visible
+      this.loadLevel(6);
+      // Keep scoreboard visible
+      const scoreboard = document.getElementById("scoreboard");
+      if (scoreboard) scoreboard.style.display = "block";
+      // Hide textbox
+      const editor = document.getElementById("game-textbox");
+      if (editor) editor.style.display = "none";
+    }
+    // Call original popup logic
     const popup = document.createElement("div");
     popup.id = "goal-popup";
     popup.className = "goal-popup";
@@ -658,16 +691,27 @@ function startGame() {
   document.getElementById("action-buttons").style.display = "flex";
 
   const editor = document.getElementById("game-textbox");
-  // Show textbox only if not 1v1 (level 6)
+  const scoreboard = document.getElementById("scoreboard");
+  // Show scoreboard for 1v1, textbox for other levels
   if (selectedLevel === 6) {
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
+    if (scoreboard) scoreboard.style.display = "block";
+    if (scoreboard) {
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+    }
+    if (window.currentGame) {
+      window.currentGame.playerScore = 0;
+      window.currentGame.defenderScore = 0;
+    }
   } else {
     editor.style.display = "block";
     editor.contentEditable = "true";
     editor.classList.add("enabled");
     editor.innerHTML = "";
+    if (scoreboard) scoreboard.style.display = "none";
   }
 
   function animate() {
@@ -680,7 +724,72 @@ function startGame() {
   animate();
 }
 
-const FUNCTIONS = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+// Patch showGoalPopup to update scores and reset 1v1 after goal
+const originalShowGoalPopup = Game.prototype.showGoalPopup;
+Game.prototype.showGoalPopup = function () {
+  if (document.getElementById("goal-popup")) return; // Only one popup at a time
+  if (this.currentLevel === 6) {
+    // Ball in right goal: Player scores, left goal: Defender scores
+    const ballBox = this.soccerBall.getBox();
+    const leftGoalBox = {
+      x: this.fieldLeft.x,
+      y: this.fieldLeft.y,
+      width: this.fieldLeft.width,
+      height: this.fieldLeft.height,
+    };
+    const rightGoalBox = {
+      x: this.fieldRight.x,
+      y: this.fieldRight.y,
+      width: this.fieldRight.width,
+      height: this.fieldRight.height,
+    };
+    if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+      this.playerScore++;
+      document.getElementById("score-player").textContent = this.playerScore;
+    } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+      this.defenderScore++;
+      document.getElementById("score-defender").textContent =
+        this.defenderScore;
+    }
+    // After scoring, reset the level to keep both players and ball visible
+    this.loadLevel(6);
+    // Keep scoreboard visible
+    const scoreboard = document.getElementById("scoreboard");
+    if (scoreboard) scoreboard.style.display = "block";
+    // Hide textbox
+    const editor = document.getElementById("game-textbox");
+    if (editor) editor.style.display = "none";
+  }
+  // Call original popup logic
+  const popup = document.createElement("div");
+  popup.id = "goal-popup";
+  popup.className = "goal-popup";
+  const nextLevel = Math.min(this.currentLevel + 1, 5);
+  popup.innerHTML = `
+    <div class="goal-popup-content">
+      <h2 class="goal-unique-effect">Great job!</h2>
+      <p>Level: <span id="goal-level-label">Level ${this.currentLevel}</span> complete</p>
+      <button id="next-level-popup-btn" class="green-btn">Next Level</button>
+      <button id="close-popup-btn" class="red-btn">Close</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+  document.getElementById("next-level-popup-btn").onclick = () => {
+    popup.remove();
+    if (this.currentLevel < 5) {
+      this.loadLevel(nextLevel);
+      // Clear code box
+      const editor = document.getElementById("game-textbox");
+      if (editor) editor.innerHTML = "";
+      // Update level label in dropdown
+      const dropdown = document.getElementById("level-dropdown");
+      if (dropdown) dropdown.value = nextLevel;
+    }
+  };
+  document.getElementById("close-popup-btn").onclick = () => {
+    popup.remove();
+  };
+};
 
 function checkSyntaxErrors(code) {
   const lines = code.split("\n");

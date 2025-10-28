@@ -38,6 +38,15 @@
           spellcheck="false"
           data-placeholder="Type Code Here..."
         ></pre>
+        <div id="scoreboard" style="display: none">
+          <div class="score-row">
+            <span class="score-label">Player</span>
+            <span id="score-player" class="score-value">0</span>
+            <span class="score-sep">-</span>
+            <span id="score-defender" class="score-value">0</span>
+            <span class="score-label">Defender</span>
+          </div>
+        </div>
 
         <button id="start-btn" onclick="startGame()">Start</button>
         <div id="action-buttons" style="display: none">

@@ -620,3 +620,41 @@ body > * {
   color: #333;
   line-height: 1.5;
 }
+
+/* Scoreboard Styles */
+#scoreboard {
+  width: 100%;
+  background: #f7f7f7;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 12px 0 18px 0;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 1.3em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.score-label {
+  font-weight: bold;
+  color: #2e8b57;
+  font-size: 1.1em;
+}
+.score-value {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #1976d2;
+  min-width: 32px;
+  display: inline-block;
+}
+.score-sep {
+  font-size: 1.5em;
+  color: #888;
+  margin: 0 10px;
+}
