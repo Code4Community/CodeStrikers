@@ -309,6 +309,8 @@ class Game {
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
     this.isExecuting = false;
+    // Smooth movement state for 1v1
+    this.pressedKeys = new Set();
   }
 
   render(context) {
@@ -505,56 +507,42 @@ class Game {
   handleDefenderControls(e) {
     // Only allow in 1v1 (level 6)
     if (this.currentLevel !== 6) return;
-    const speed = 10;
-    // WASD for main player
+    if (e.type === "keydown") {
+      this.pressedKeys.add(e.key);
+    } else if (e.type === "keyup") {
+      this.pressedKeys.delete(e.key);
+    }
+  }
+
+  updateSmoothMovement() {
+    if (this.currentLevel !== 6) return;
+    const speed = 4;
+    // Main player (WASD)
     let dx = 0,
       dy = 0;
-    switch (e.key.toLowerCase()) {
-      case "a":
-        dx = -speed;
-        this.player.x = Math.max(0, this.player.x + dx);
-        return;
-      case "d":
-        dx = speed;
-        this.player.x = Math.min(
-          this.width - this.player.width,
-          this.player.x + dx
-        );
-        return;
-      case "w":
-        dy = -speed;
-        this.player.y = Math.max(0, this.player.y + dy);
-        return;
-      case "s":
-        dy = speed;
-        this.player.y = Math.min(
-          this.height - this.player.height,
-          this.player.y + dy
-        );
-        return;
+    if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
+    if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
+    if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
+    if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
+    if (dx !== 0 || dy !== 0) {
+      this.player.x = Math.max(
+        0,
+        Math.min(this.width - this.player.width, this.player.x + dx)
+      );
+      this.player.y = Math.max(
+        0,
+        Math.min(this.height - this.player.height, this.player.y + dy)
+      );
     }
-    // Arrow keys for defender
+    // Defender (arrow keys)
     dx = 0;
     dy = 0;
-    switch (e.key) {
-      case "ArrowLeft":
-        dx = -speed;
-        this.defenders[0]?.move(dx, 0);
-        break;
-      case "ArrowRight":
-        dx = speed;
-        this.defenders[0]?.move(dx, 0);
-        break;
-      case "ArrowUp":
-        dy = -speed;
-        this.defenders[0]?.move(0, dy);
-        break;
-      case "ArrowDown":
-        dy = speed;
-        this.defenders[0]?.move(0, dy);
-        break;
-      default:
-        return;
+    if (this.pressedKeys.has("ArrowLeft")) dx -= speed;
+    if (this.pressedKeys.has("ArrowRight")) dx += speed;
+    if (this.pressedKeys.has("ArrowUp")) dy -= speed;
+    if (this.pressedKeys.has("ArrowDown")) dy += speed;
+    if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
+      this.defenders[0].move(dx, dy);
     }
   }
 }
@@ -591,10 +579,11 @@ function startGame() {
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (typeof game.updateSmoothMovement === "function")
+      game.updateSmoothMovement();
     game.render(ctx);
     requestAnimationFrame(animate);
   }
-
   animate();
 }
 
@@ -929,6 +918,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // WASD/Arrow controls for defenders in 1v1 (level 6), only after game is started
   window.addEventListener("keydown", (e) => {
+    const currentGame = window.currentGame;
+    if (currentGame && currentGame.currentLevel === 6) {
+      currentGame.handleDefenderControls(e);
+      e.preventDefault();
+    }
+  });
+  window.addEventListener("keyup", (e) => {
+    const currentGame = window.currentGame;
+    if (currentGame && currentGame.currentLevel === 6) {
+      currentGame.handleDefenderControls(e);
+      e.preventDefault();
+    }
+  });
+
+  // Smooth movement for 1v1 (level 6)
+  window.addEventListener("keydown", (e) => {
+    const currentGame = window.currentGame;
+    if (currentGame && currentGame.currentLevel === 6) {
+      currentGame.handleDefenderControls(e);
+      e.preventDefault();
+    }
+  });
+  window.addEventListener("keyup", (e) => {
     const currentGame = window.currentGame;
     if (currentGame && currentGame.currentLevel === 6) {
       currentGame.handleDefenderControls(e);
