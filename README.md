@@ -72,7 +72,3 @@ Play against a friend locally:
 ## Assets
 
 All images and assets are in the `assets/` folder.
-
-## Credits
-
-Created by Code4Community.
