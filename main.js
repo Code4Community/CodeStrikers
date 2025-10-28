@@ -220,6 +220,17 @@ class Player {
 }
 
 class Defender {
+  // Returns a rectangle representing the defender's feet
+  getFeetBox() {
+    const feetHeight = 10;
+    const feetWidth = this.width * 0.5;
+    return {
+      x: this.x + (this.width - feetWidth) / 2,
+      y: this.y + this.height - feetHeight,
+      width: feetWidth,
+      height: feetHeight,
+    };
+  }
   constructor(game, x, y) {
     this.game = game;
     this.width = 60;
@@ -284,6 +295,24 @@ class Field {
 }
 
 class Game {
+  // Helper to get movement direction for a player based on pressed keys
+  getPlayerDirection(playerType) {
+    // playerType: 'main' or 'defender'
+    let dx = 0,
+      dy = 0;
+    if (playerType === "main") {
+      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= 1;
+      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += 1;
+      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= 1;
+      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += 1;
+    } else if (playerType === "defender") {
+      if (this.pressedKeys.has("ArrowLeft")) dx -= 1;
+      if (this.pressedKeys.has("ArrowRight")) dx += 1;
+      if (this.pressedKeys.has("ArrowUp")) dy -= 1;
+      if (this.pressedKeys.has("ArrowDown")) dy += 1;
+    }
+    return { dx, dy };
+  }
   // Helper: check if two rectangles overlap
   static rectsOverlap(a, b) {
     return (
@@ -515,6 +544,68 @@ class Game {
   }
 
   updateSmoothMovement() {
+    // Ball bump/kick on contact for both players in 1v1
+    if (this.currentLevel === 6 && this.soccerBall) {
+      if (!this._kickCooldown)
+        this._kickCooldown = { main: false, defender: false };
+      const mainFeet = this.player.getFeetBox();
+      const ballBox = this.soccerBall.getBox();
+      // Main player (WASD)
+      const mainDir = this.getPlayerDirection("main");
+      if (
+        Game.rectsOverlap(mainFeet, ballBox) &&
+        (mainDir.dx !== 0 || mainDir.dy !== 0)
+      ) {
+        if (!this._kickCooldown.main) {
+          const kickSpeed = 14;
+          this.soccerBall.x += mainDir.dx * kickSpeed;
+          this.soccerBall.y += mainDir.dy * kickSpeed;
+          this.soccerBall.x = Math.max(
+            0,
+            Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
+          );
+          this.soccerBall.y = Math.max(
+            0,
+            Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
+          );
+          this._kickCooldown.main = true;
+          setTimeout(() => {
+            this._kickCooldown.main = false;
+          }, 180);
+        }
+      } else {
+        this._kickCooldown.main = false;
+      }
+      // Defender (arrow keys)
+      if (this.defenders[0]) {
+        const defFeet = this.defenders[0].getFeetBox();
+        const defDir = this.getPlayerDirection("defender");
+        if (
+          Game.rectsOverlap(defFeet, ballBox) &&
+          (defDir.dx !== 0 || defDir.dy !== 0)
+        ) {
+          if (!this._kickCooldown.defender) {
+            const kickSpeed = 14;
+            this.soccerBall.x += defDir.dx * kickSpeed;
+            this.soccerBall.y += defDir.dy * kickSpeed;
+            this.soccerBall.x = Math.max(
+              0,
+              Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
+            );
+            this.soccerBall.y = Math.max(
+              0,
+              Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
+            );
+            this._kickCooldown.defender = true;
+            setTimeout(() => {
+              this._kickCooldown.defender = false;
+            }, 180);
+          }
+        } else {
+          this._kickCooldown.defender = false;
+        }
+      }
+    }
     if (this.currentLevel !== 6) return;
     const speed = 4;
     // Main player (WASD)
@@ -570,6 +661,8 @@ function startGame() {
   // Show textbox only if not 1v1 (level 6)
   if (selectedLevel === 6) {
     editor.style.display = "none";
+    editor.contentEditable = "false";
+    editor.classList.remove("enabled");
   } else {
     editor.style.display = "block";
     editor.contentEditable = "true";
@@ -875,13 +968,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
     const val = parseInt(e.target.value);
     const editor = document.getElementById("game-textbox");
-    if (val === 6) {
-      editor.style.display = "none";
-    } else {
-      editor.style.display = "block";
-      editor.contentEditable = "true";
-      editor.classList.add("enabled");
-    }
+    // Always hide textbox until Start is clicked, and always hide for 1v1
+    editor.style.display = "none";
+    editor.contentEditable = "false";
+    editor.classList.remove("enabled");
     if (currentGame) {
       currentGame.loadLevel(val);
       // Reset player
