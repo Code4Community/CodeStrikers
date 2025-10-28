@@ -102,9 +102,9 @@ class Player {
     const targetX = this.x + this.speed;
     if (targetX + this.width <= this.game.width) {
       const steps = 8;
-      const dx = (targetX - this.x) / steps;
+      const dx = targetX - this.x;
       for (let i = 0; i < steps; i++) {
-        this.x += dx;
+        this.x += dx / steps;
         if (this.game.soccerBall.isStuck) {
           this.game.soccerBall.stickToPlayer(this);
         }
@@ -124,9 +124,9 @@ class Player {
     const targetX = this.x - this.speed;
     if (targetX >= 0) {
       const steps = 16;
-      const dx = (targetX - this.x) / steps;
+      const dx = targetX - this.x;
       for (let i = 0; i < steps; i++) {
-        this.x += dx;
+        this.x += dx / steps;
         if (this.game.soccerBall.isStuck) {
           this.game.soccerBall.stickToPlayer(this);
         }
@@ -146,9 +146,9 @@ class Player {
     const targetY = this.y - this.speed;
     if (targetY >= 0) {
       const steps = 8;
-      const dy = (targetY - this.y) / steps;
+      const dy = targetY - this.y;
       for (let i = 0; i < steps; i++) {
-        this.y += dy;
+        this.y += dy / steps;
         if (this.game.soccerBall.isStuck) {
           this.game.soccerBall.stickToPlayer(this);
         }
@@ -168,9 +168,9 @@ class Player {
     const targetY = this.y + this.speed;
     if (targetY + this.height <= this.game.height) {
       const steps = 16;
-      const dy = (targetY - this.y) / steps;
+      const dy = targetY - this.y;
       for (let i = 0; i < steps; i++) {
-        this.y += dy;
+        this.y += dy / steps;
         if (this.game.soccerBall.isStuck) {
           this.game.soccerBall.stickToPlayer(this);
         }
@@ -227,6 +227,12 @@ class Defender {
     this.x = x;
     this.y = y;
     this.image = document.getElementById("defender");
+  }
+
+  move(dx, dy) {
+    // Move defender by dx, dy, clamped to field
+    this.x = Math.max(0, Math.min(this.x + dx, this.game.width - this.width));
+    this.y = Math.max(0, Math.min(this.y + dy, this.game.height - this.height));
   }
 
   draw(context) {
@@ -362,11 +368,14 @@ class Game {
       this._goalPopupActive = false;
     }
 
-    // Draw defenders only for level 2
-    if (this.currentLevel === 2 && this.defenders && this.defenders.length > 0) {
-      this.defenders.forEach(defender => defender.draw(context));
+    // Draw defenders for level 2 and 1v1 (level 6)
+    if (
+      (this.currentLevel === 2 || this.currentLevel === 6) &&
+      this.defenders &&
+      this.defenders.length > 0
+    ) {
+      this.defenders.forEach((defender) => defender.draw(context));
     }
-    
     this.player.draw(context);
     this.soccerBall.draw(context);
     this.player.update();
@@ -408,20 +417,35 @@ class Game {
     this.currentLevel = level;
     // Clear existing defenders
     this.defenders = [];
-    
+
     // Place player at fixed coordinates
-    this.player.x = 200;
-    this.player.y = 270;
+    this.player.x = 300;
+    this.player.y = 220;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
-    
-    // Add defenders for level 2
+
+    // Add defenders for level 2 and 1v1 (level 6)
     if (level === 2) {
-      // Two defenders in front of the goal, positioned to block shots
-      this.defenders.push(new Defender(this, 310, 250));
-      this.defenders.push(new Defender(this, 600, 250));
-      
-      // Place ball on the field in level 2 - positioned between player and goal
+      // Two defenders: one left, one right of the soccer ball
+      this.soccerBall.x = 430;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+      this.soccerBall.isStuck = false;
+      // Place one defender to the left of the ball, one to the right (with clear spacing)
+      const defenderWidth = 60;
+      this.defenders.push(
+        new Defender(this, this.soccerBall.x - defenderWidth - 30, 250)
+      );
+      this.defenders.push(
+        new Defender(this, this.soccerBall.x + this.soccerBall.width + 30, 250)
+      );
+    } else if (level === 6) {
+      // 1v1: main player (blue) is controlled by WASD, one defender (arrow keys)
+      this.player.x = 310;
+      this.player.y = 250;
+      this.player.startX = this.player.x;
+      this.player.startY = this.player.y;
+      // Only one defender (right, controlled by arrow keys)
+      this.defenders.push(new Defender(this, 610, 250));
       this.soccerBall.x = 430;
       this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
       this.soccerBall.isStuck = false;
@@ -431,7 +455,7 @@ class Game {
       this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
       this.soccerBall.isStuck = false;
     }
-    
+
     console.log(`Level ${level} loaded`);
   }
 
@@ -477,9 +501,67 @@ class Game {
     this.isExecuting = false;
     console.log("Code execution complete!");
   }
+
+  handleDefenderControls(e) {
+    // Only allow in 1v1 (level 6)
+    if (this.currentLevel !== 6) return;
+    const speed = 10;
+    // WASD for main player
+    let dx = 0,
+      dy = 0;
+    switch (e.key.toLowerCase()) {
+      case "a":
+        dx = -speed;
+        this.player.x = Math.max(0, this.player.x + dx);
+        return;
+      case "d":
+        dx = speed;
+        this.player.x = Math.min(
+          this.width - this.player.width,
+          this.player.x + dx
+        );
+        return;
+      case "w":
+        dy = -speed;
+        this.player.y = Math.max(0, this.player.y + dy);
+        return;
+      case "s":
+        dy = speed;
+        this.player.y = Math.min(
+          this.height - this.player.height,
+          this.player.y + dy
+        );
+        return;
+    }
+    // Arrow keys for defender
+    dx = 0;
+    dy = 0;
+    switch (e.key) {
+      case "ArrowLeft":
+        dx = -speed;
+        this.defenders[0]?.move(dx, 0);
+        break;
+      case "ArrowRight":
+        dx = speed;
+        this.defenders[0]?.move(dx, 0);
+        break;
+      case "ArrowUp":
+        dy = -speed;
+        this.defenders[0]?.move(0, dy);
+        break;
+      case "ArrowDown":
+        dy = speed;
+        this.defenders[0]?.move(0, dy);
+        break;
+      default:
+        return;
+    }
+  }
 }
 
 function startGame() {
+  // Ensure window is focused for keyboard events
+  window.focus();
   const canvas = document.getElementById("canvas1");
   const ctx = canvas.getContext("2d");
   canvas.width = 888;
@@ -497,10 +579,15 @@ function startGame() {
   document.getElementById("action-buttons").style.display = "flex";
 
   const editor = document.getElementById("game-textbox");
-  editor.style.display = "block";
-  editor.contentEditable = "true";
-  editor.classList.add("enabled");
-  editor.innerHTML = "";
+  // Show textbox only if not 1v1 (level 6)
+  if (selectedLevel === 6) {
+    editor.style.display = "none";
+  } else {
+    editor.style.display = "block";
+    editor.contentEditable = "true";
+    editor.classList.add("enabled");
+    editor.innerHTML = "";
+  }
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -797,8 +884,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
+    const val = parseInt(e.target.value);
+    const editor = document.getElementById("game-textbox");
+    if (val === 6) {
+      editor.style.display = "none";
+    } else {
+      editor.style.display = "block";
+      editor.contentEditable = "true";
+      editor.classList.add("enabled");
+    }
     if (currentGame) {
-      currentGame.loadLevel(parseInt(e.target.value));
+      currentGame.loadLevel(val);
       // Reset player
       currentGame.player.reset();
       if (currentGame.soccerBall) {
@@ -830,4 +926,13 @@ document.addEventListener("DOMContentLoaded", () => {
     window.currentGame = game; // Make it globally accessible
     updateLevelButtons();
   };
+
+  // WASD/Arrow controls for defenders in 1v1 (level 6), only after game is started
+  window.addEventListener("keydown", (e) => {
+    const currentGame = window.currentGame;
+    if (currentGame && currentGame.currentLevel === 6) {
+      currentGame.handleDefenderControls(e);
+      e.preventDefault();
+    }
+  });
 });
