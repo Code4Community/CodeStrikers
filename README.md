@@ -44,7 +44,7 @@ Advanced challenge (details in-game).
 
 ### AI Agent (Coming Soon)
 
-Face off against an AI-controlled defender powered by reinforcement learning (PyTorch). This mode will let you test your code and skills against a smart, learning opponent.
+Face off against an AI-controlled javascript defender will test your code and skills against a smart, learning opponent.
 
 ### 1v1 Mode
 
