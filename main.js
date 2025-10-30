@@ -769,18 +769,21 @@ function startGame() {
   const editor = document.getElementById("game-textbox");
   const scoreboard = document.getElementById("scoreboard");
   // Show scoreboard for 1v1, textbox for other levels
-  if (selectedLevel === 6) {
+  // Hide textbox for 1v1 (6) and AI Agent (5), show for levels 1-5
+  if (selectedLevel === 6 || selectedLevel === 5) {
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
     if (scoreboard) scoreboard.style.display = "block";
     // Always initialize scores for 1v1 mode
-    if (window.currentGame) {
+    if (selectedLevel === 6 && window.currentGame) {
       window.currentGame.playerScore = 0;
       window.currentGame.defenderScore = 0;
     }
-    document.getElementById("score-player").textContent = "0";
-    document.getElementById("score-defender").textContent = "0";
+    if (selectedLevel === 6) {
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+    }
   } else {
     editor.style.display = "block";
     editor.contentEditable = "true";
@@ -971,6 +974,9 @@ document.addEventListener("DOMContentLoaded", () => {
   editor.addEventListener("input", (e) => {
     if (!editor.isContentEditable) return;
 
+    // Only update caret if the editor is focused
+    if (document.activeElement !== editor) return;
+
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
@@ -1033,26 +1039,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editor.dispatchEvent(new Event("input"));
     }
 
-    // Allow Enter key to create new lines
+    // Allow Enter key to create new lines (fix double-Enter bug)
     if (e.key === "Enter") {
       e.preventDefault();
-
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
       const range = selection.getRangeAt(0);
-
-      // Insert a line break
-      const textNode = document.createTextNode("\n");
-      range.deleteContents();
-      range.insertNode(textNode);
-
-      // Move cursor after the newline
-      range.setStartAfter(textNode);
-      range.collapse(true);
-
-      selection.removeAllRanges();
-      selection.addRange(range);
-
+      // Use insertLineBreak for proper new line in contenteditable
+      document.execCommand("insertLineBreak");
       // Trigger syntax highlighting
       editor.dispatchEvent(new Event("input"));
     }
@@ -1160,7 +1154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
     const val = parseInt(e.target.value);
     const editor = document.getElementById("game-textbox");
-    // Always hide textbox until Start is clicked, and always hide for 1v1
+    // Always hide textbox before Start is clicked
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
@@ -1177,6 +1171,13 @@ document.addEventListener("DOMContentLoaded", () => {
           y: currentGame.soccerBall.y,
         };
         currentGame._ballHasMoved = false;
+      }
+      // Hide and reset scoreboard if switching to code levels (1-5)
+      const scoreboard = document.getElementById("scoreboard");
+      if (val >= 1 && val <= 5 && scoreboard) {
+        scoreboard.style.display = "none";
+        document.getElementById("score-player").textContent = "0";
+        document.getElementById("score-defender").textContent = "0";
       }
       updateLevelButtons();
     }
