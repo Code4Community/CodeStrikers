@@ -127,13 +127,31 @@ class Player {
       const dx = targetX - this.x;
       for (let i = 0; i < steps; i++) {
         this.x += dx / steps;
-        if (this.game.soccerBall.isStuck) {
+        // Completely prevent ball from sticking/moving backwards if in 1v1 and in front of ball
+        let canStick = true;
+        if (this.game.currentLevel === 6) {
+          const playerRight = this.x + this.width;
+          const ballLeft = this.game.soccerBall.x;
+          if (playerRight <= ballLeft + 2) {
+            canStick = false;
+          }
+        }
+        if (this.game.soccerBall.isStuck && canStick) {
           this.game.soccerBall.stickToPlayer(this);
         }
         await new Promise((r) => setTimeout(r, 12));
       }
       this.x = targetX;
-      if (this.game.soccerBall.isStuck) {
+      // Final check for stick after move
+      let canStick = true;
+      if (this.game.currentLevel === 6) {
+        const playerRight = this.x + this.width;
+        const ballLeft = this.game.soccerBall.x;
+        if (playerRight <= ballLeft + 2) {
+          canStick = false;
+        }
+      }
+      if (this.game.soccerBall.isStuck && canStick) {
         this.game.soccerBall.stickToPlayer(this);
       }
       console.log(`Player moved left to x: ${this.x}`);
@@ -590,22 +608,49 @@ class Game {
         Game.rectsOverlap(mainFeet, ballBox) &&
         (mainDir.dx !== 0 || mainDir.dy !== 0)
       ) {
+        // Check if player is behind the ball (can push it forward)
+        const playerRight = this.player.x + this.player.width;
+        const ballLeft = this.soccerBall.x;
+        const isPlayerBehindBall = playerRight > ballLeft + 5; // Player is behind if overlapping/past ball
+
         if (!this._kickCooldown.main) {
           const kickSpeed = 14;
-          this.soccerBall.x += mainDir.dx * kickSpeed;
-          this.soccerBall.y += mainDir.dy * kickSpeed;
-          this.soccerBall.x = Math.max(
-            0,
-            Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
-          );
-          this.soccerBall.y = Math.max(
-            0,
-            Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
-          );
-          this._kickCooldown.main = true;
-          setTimeout(() => {
-            this._kickCooldown.main = false;
-          }, 180);
+          let canKick = false;
+          let kickDx = 0;
+          let kickDy = 0;
+
+          // Allow forward (right) movement only if behind the ball
+          if (mainDir.dx > 0 && isPlayerBehindBall) {
+            canKick = true;
+            kickDx = mainDir.dx * kickSpeed;
+          }
+          // Allow backward (left) movement only if behind the ball
+          else if (mainDir.dx < 0 && isPlayerBehindBall) {
+            canKick = true;
+            kickDx = mainDir.dx * kickSpeed;
+          }
+          // Always allow up/down movement regardless of position
+          if (mainDir.dy !== 0) {
+            canKick = true;
+            kickDy = mainDir.dy * kickSpeed;
+          }
+
+          if (canKick) {
+            this.soccerBall.x += kickDx;
+            this.soccerBall.y += kickDy;
+            this.soccerBall.x = Math.max(
+              0,
+              Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
+            );
+            this.soccerBall.y = Math.max(
+              0,
+              Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
+            );
+            this._kickCooldown.main = true;
+            setTimeout(() => {
+              this._kickCooldown.main = false;
+            }, 180);
+          }
         }
       } else {
         this._kickCooldown.main = false;
@@ -618,22 +663,52 @@ class Game {
           Game.rectsOverlap(defFeet, ballBox) &&
           (defDir.dx !== 0 || defDir.dy !== 0)
         ) {
+          // Check if defender is behind the ball (left side, so can push it left)
+          const defenderLeft = this.defenders[0].x;
+          const ballRight = this.soccerBall.x + this.soccerBall.width;
+          const isDefenderBehindBall = defenderLeft < ballRight - 5; // Defender is behind if to the left
+
           if (!this._kickCooldown.defender) {
             const kickSpeed = 14;
-            this.soccerBall.x += defDir.dx * kickSpeed;
-            this.soccerBall.y += defDir.dy * kickSpeed;
-            this.soccerBall.x = Math.max(
-              0,
-              Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
-            );
-            this.soccerBall.y = Math.max(
-              0,
-              Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
-            );
-            this._kickCooldown.defender = true;
-            setTimeout(() => {
-              this._kickCooldown.defender = false;
-            }, 180);
+            let canKick = false;
+            let kickDx = 0;
+            let kickDy = 0;
+
+            // Allow backward (left) movement only if behind the ball
+            if (defDir.dx < 0 && isDefenderBehindBall) {
+              canKick = true;
+              kickDx = defDir.dx * kickSpeed;
+            }
+            // Allow forward (right) movement only if behind the ball
+            else if (defDir.dx > 0 && isDefenderBehindBall) {
+              canKick = true;
+              kickDx = defDir.dx * kickSpeed;
+            }
+            // Always allow up/down movement regardless of position
+            if (defDir.dy !== 0) {
+              canKick = true;
+              kickDy = defDir.dy * kickSpeed;
+            }
+
+            if (canKick) {
+              this.soccerBall.x += kickDx;
+              this.soccerBall.y += kickDy;
+              this.soccerBall.x = Math.max(
+                0,
+                Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
+              );
+              this.soccerBall.y = Math.max(
+                0,
+                Math.min(
+                  this.height - this.soccerBall.height,
+                  this.soccerBall.y
+                )
+              );
+              this._kickCooldown.defender = true;
+              setTimeout(() => {
+                this._kickCooldown.defender = false;
+              }, 180);
+            }
           }
         } else {
           this._kickCooldown.defender = false;
@@ -699,14 +774,13 @@ function startGame() {
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
     if (scoreboard) scoreboard.style.display = "block";
-    if (scoreboard) {
-      document.getElementById("score-player").textContent = "0";
-      document.getElementById("score-defender").textContent = "0";
-    }
+    // Always initialize scores for 1v1 mode
     if (window.currentGame) {
       window.currentGame.playerScore = 0;
       window.currentGame.defenderScore = 0;
     }
+    document.getElementById("score-player").textContent = "0";
+    document.getElementById("score-defender").textContent = "0";
   } else {
     editor.style.display = "block";
     editor.contentEditable = "true";
@@ -730,6 +804,9 @@ const originalShowGoalPopup = Game.prototype.showGoalPopup;
 Game.prototype.showGoalPopup = function () {
   if (this.currentLevel === 6) {
     // Ball in right goal: Player scores, left goal: Defender scores
+    // Ensure scores are initialized
+    if (typeof this.playerScore !== "number") this.playerScore = 0;
+    if (typeof this.defenderScore !== "number") this.defenderScore = 0;
     const ballBox = this.soccerBall.getBox();
     const leftGoalBox = {
       x: this.fieldLeft.x,
@@ -744,15 +821,20 @@ Game.prototype.showGoalPopup = function () {
       height: this.fieldRight.height,
     };
     if (Game.rectsOverlap(ballBox, rightGoalBox)) {
-      this.playerScore++;
+      this.playerScore =
+        (typeof this.playerScore === "number" ? this.playerScore : 0) + 1;
       document.getElementById("score-player").textContent = this.playerScore;
     } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
-      this.defenderScore++;
+      this.defenderScore =
+        (typeof this.defenderScore === "number" ? this.defenderScore : 0) + 1;
       document.getElementById("score-defender").textContent =
         this.defenderScore;
     }
     // After scoring, reset the level to keep both players and ball visible
     this.loadLevel(6);
+    // Restore scores after reload
+    document.getElementById("score-player").textContent = this.playerScore;
+    document.getElementById("score-defender").textContent = this.defenderScore;
     // Keep scoreboard visible
     const scoreboard = document.getElementById("scoreboard");
     if (scoreboard) scoreboard.style.display = "block";
