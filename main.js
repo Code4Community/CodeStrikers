@@ -274,12 +274,14 @@ class Defender {
 class Field {
   constructor(game, side) {
     this.game = game;
-    // Make goals smaller so they're easier to aim at
-    this.width = 120; // Goal width (reduced from 320)
-    this.height = 300; // Goal height (reduced from 400)
+    // Use soccer_goal.png for the goal image
+    this.image = document.getElementById("soccer-goal");
     this.side = side;
-
-    const edgeOffset = -80; // Move a bit back to line up with white line
+    // Goal box size (smaller, matches the small box in the field image)
+    this.width = 120; // Adjust as needed for the small box
+    this.height = 200; // Adjust as needed for the small box
+    // Position goal at the correct edge and vertical center
+    const edgeOffset = -15; // Small offset from edge
     if (side === "left") {
       this.x = edgeOffset;
       this.y = (this.game.height - this.height) / 2;
@@ -293,18 +295,14 @@ class Field {
     if (this.image) {
       context.save();
       if (this.side === "left") {
-        // Rotate 180 degrees for left field
-        context.translate(this.x + this.width / 2, this.y + this.height / 2);
-        context.rotate(Math.PI);
-        context.drawImage(
-          this.image,
-          -this.width / 2,
-          -this.height / 2,
-          this.width,
-          this.height
-        );
+        // Draw left goal (no rotation, just flip horizontally if needed)
+        context.save();
+        context.translate(this.x + this.width, this.y);
+        context.scale(-1, 1); // Flip horizontally
+        context.drawImage(this.image, 0, 0, this.width, this.height);
+        context.restore();
       } else {
-        // Right field, no rotation
+        // Draw right goal (normal)
         context.drawImage(this.image, this.x, this.y, this.width, this.height);
       }
       context.restore();
@@ -370,17 +368,19 @@ class Game {
     this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
 
     // Goal collision detection
+    // Make the goal collision area even smaller so the ball must fully enter the goal
+    const goalInset = 49; // Ball must go even deeper inside the goal to count
     const leftGoalBox = {
-      x: this.fieldLeft.x,
-      y: this.fieldLeft.y,
-      width: this.fieldLeft.width,
-      height: this.fieldLeft.height,
+      x: this.fieldLeft.x + goalInset,
+      y: this.fieldLeft.y + goalInset,
+      width: this.fieldLeft.width - goalInset * 2,
+      height: this.fieldLeft.height - goalInset * 2,
     };
     const rightGoalBox = {
-      x: this.fieldRight.x,
-      y: this.fieldRight.y,
-      width: this.fieldRight.width,
-      height: this.fieldRight.height,
+      x: this.fieldRight.x + goalInset,
+      y: this.fieldRight.y + goalInset,
+      width: this.fieldRight.width - goalInset * 2,
+      height: this.fieldRight.height - goalInset * 2,
     };
     // Only show popup if not already shown and only once per goal event
     // Track initial ball position per level
