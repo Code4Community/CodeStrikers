@@ -42,7 +42,7 @@ Defenders move up and down. Time your movement and shoot to score!
 
 Advanced challenge (details in-game).
 
-### AI Agent (Coming Soon)
+### JavaScript Bot
 
 Face off against an AI-controlled javascript defender will test your code and skills against a smart, learning opponent.
 
