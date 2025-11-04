@@ -417,9 +417,11 @@ class Game {
       this._goalPopupActive = false;
     }
 
-    // Draw defenders for level 2 and 1v1 (level 6)
+    // Draw defenders for level 2, 1v1 (level 6), and Bot mode
     if (
-      (this.currentLevel === 2 || this.currentLevel === 6) &&
+      (this.currentLevel === 2 ||
+        this.currentLevel === 6 ||
+        this.currentLevel === "bot") &&
       this.defenders &&
       this.defenders.length > 0
     ) {
@@ -516,13 +518,12 @@ class Game {
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
 
-    // Add defenders for level 2 and 1v1 (level 6)
+    // Add defenders for level 2, 1v1 (level 6), and Bot mode
     if (level === 2) {
       // Two defenders: one left, one right of the soccer ball
       this.soccerBall.x = 430;
       this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
       this.soccerBall.isStuck = false;
-      // Place one defender to the left of the ball, one to the right (with clear spacing)
       const defenderWidth = 60;
       this.defenders.push(
         new Defender(this, this.soccerBall.x - defenderWidth - 30, 250)
@@ -537,6 +538,16 @@ class Game {
       this.player.startX = this.player.x;
       this.player.startY = this.player.y;
       // Only one defender (right, controlled by arrow keys)
+      this.defenders.push(new Defender(this, 610, 250));
+      this.soccerBall.x = 430;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+      this.soccerBall.isStuck = false;
+    } else if (level === "bot") {
+      // Bot mode: add a defender on the right side
+      this.player.x = 150;
+      this.player.y = 220;
+      this.player.startX = this.player.x;
+      this.player.startY = this.player.y;
       this.defenders.push(new Defender(this, 610, 250));
       this.soccerBall.x = 430;
       this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
@@ -790,8 +801,16 @@ function startGame() {
     // 1v1 mode
     if (scoreboard) scoreboard.style.display = "none";
     if (start1v1Btn) {
-      start1v1Btn.style.display = "block";
+      // Only show the button if it hasn't been clicked yet
+      if (!window._scoreboardStarted1v1) {
+        start1v1Btn.style.display = "block";
+      } else {
+        start1v1Btn.style.display = "none";
+      }
       start1v1Btn.onclick = () => {
+        window._scoreboardStarted1v1 = true;
+        start1v1Btn.style.display = "none";
+        if (scoreboard) scoreboard.style.display = "block";
         if (window.currentGame) {
           window.currentGame.playerScore = 0;
           window.currentGame.defenderScore = 0;
@@ -799,14 +818,8 @@ function startGame() {
           document.getElementById("score-defender").textContent = "0";
           window.currentGame.loadLevel(6);
         }
-        if (scoreboard) scoreboard.style.display = "block";
-        start1v1Btn.style.display = "none";
-        // Mark that scoreboard has been started for 1v1
-        window._scoreboardStarted1v1 = true;
       };
     }
-    // Reset scoreboard started flag on entering 1v1
-    window._scoreboardStarted1v1 = false;
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
@@ -1308,27 +1321,47 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Also patch the level dropdown change event
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
-    const selectedLevel = parseInt(e.target.value);
+    const selectedValue = e.target.value;
+    let selectedLevel = parseInt(selectedValue);
+    if (selectedValue === "bot") {
+      selectedLevel = "bot";
+    }
     if (currentGame) {
-      currentGame.loadLevel(selectedLevel);
-      currentGame.player.reset();
-      if (currentGame.soccerBall) {
-        currentGame._goalPopupShown = false;
-        currentGame._goalPopupActive = false;
-        currentGame._ballInitialPos = {
-          x: currentGame.soccerBall.x,
-          y: currentGame.soccerBall.y,
-        };
-        currentGame._ballHasMoved = false;
-      }
-      // Hide/show textbox for 1v1
-      const editor = document.getElementById("game-textbox");
-      const runBtn = document.getElementById("run-btn");
-      const clearBtn = document.getElementById("clear-btn");
-      const scoreboard = document.getElementById("scoreboard");
-      const selectedValue = e.target.value;
-      const start1v1Btn = document.getElementById("start-1v1-btn");
-      if (selectedLevel === 6) {
+      if (selectedValue === "bot") {
+        // Bot mode
+        currentGame.loadLevel("bot"); // Use bot mode for defender
+        // Hide IDE and scoreboard
+        const editor = document.getElementById("game-textbox");
+        const runBtn = document.getElementById("run-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const scoreboard = document.getElementById("scoreboard");
+        const start1v1Btn = document.getElementById("start-1v1-btn");
+        if (start1v1Btn) start1v1Btn.style.display = "none";
+        editor.style.display = "none";
+        editor.contentEditable = "false";
+        editor.classList.remove("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "none";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      } else if (selectedValue === "6") {
+        // 1v1 mode
+        currentGame.loadLevel(6);
+        currentGame.player.reset();
+        if (currentGame.soccerBall) {
+          currentGame._goalPopupShown = false;
+          currentGame._goalPopupActive = false;
+          currentGame._ballInitialPos = {
+            x: currentGame.soccerBall.x,
+            y: currentGame.soccerBall.y,
+          };
+          currentGame._ballHasMoved = false;
+        }
+        const editor = document.getElementById("game-textbox");
+        const runBtn = document.getElementById("run-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const scoreboard = document.getElementById("scoreboard");
+        const start1v1Btn = document.getElementById("start-1v1-btn");
         if (window._scoreboardStarted1v1) {
           if (scoreboard) scoreboard.style.display = "block";
           if (start1v1Btn) start1v1Btn.style.display = "none";
@@ -1343,6 +1376,23 @@ document.addEventListener("DOMContentLoaded", () => {
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
+        // All other levels
+        currentGame.loadLevel(selectedLevel);
+        currentGame.player.reset();
+        if (currentGame.soccerBall) {
+          currentGame._goalPopupShown = false;
+          currentGame._goalPopupActive = false;
+          currentGame._ballInitialPos = {
+            x: currentGame.soccerBall.x,
+            y: currentGame.soccerBall.y,
+          };
+          currentGame._ballHasMoved = false;
+        }
+        const editor = document.getElementById("game-textbox");
+        const runBtn = document.getElementById("run-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const scoreboard = document.getElementById("scoreboard");
+        const start1v1Btn = document.getElementById("start-1v1-btn");
         if (start1v1Btn) start1v1Btn.style.display = "none";
         editor.style.display = "block";
         editor.contentEditable = "true";
@@ -1363,7 +1413,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (currentGame) {
       backBtn.disabled = currentGame.currentLevel === 1;
-      nextBtn.disabled = currentGame.currentLevel === 5;
+      const dropdown = document.getElementById("level-dropdown");
+      const selectedValue = dropdown.value;
+      // Next Level button should only be disabled for 1v1 and Bot modes
+      if (selectedValue === "6" || selectedValue === "bot") {
+        nextBtn.disabled = true;
+      } else {
+        nextBtn.disabled = false;
+      }
     }
   }
 
