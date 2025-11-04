@@ -349,7 +349,7 @@ class Game {
     this.soccerBall = new SoccerBall(this);
     this.defenders = [];
     // Set player position to fixed coordinates
-    this.player.x = 200;
+    this.player.x = 100;
     this.player.y = 270;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
@@ -460,9 +460,13 @@ class Game {
       // Keep scoreboard visible
       const scoreboard = document.getElementById("scoreboard");
       if (scoreboard) scoreboard.style.display = "block";
-      // Hide textbox
+      // Keep IDE visible for all levels
       const editor = document.getElementById("game-textbox");
-      if (editor) editor.style.display = "none";
+      if (editor) {
+        editor.style.display = "block";
+        editor.contentEditable = "true";
+        editor.classList.add("enabled");
+      }
       return; // Do NOT show popup for 1v1
     }
     // Call original popup logic
@@ -483,9 +487,14 @@ class Game {
       popup.remove();
       if (this.currentLevel < 5) {
         this.loadLevel(nextLevel);
-        // Clear code box
+        // Clear code box but keep IDE visible
         const editor = document.getElementById("game-textbox");
-        if (editor) editor.innerHTML = "";
+        if (editor) {
+          editor.innerHTML = "";
+          editor.style.display = "block";
+          editor.contentEditable = "true";
+          editor.classList.add("enabled");
+        }
         // Update level label in dropdown
         const dropdown = document.getElementById("level-dropdown");
         if (dropdown) dropdown.value = nextLevel;
@@ -502,7 +511,7 @@ class Game {
     this.defenders = [];
 
     // Place player at fixed coordinates
-    this.player.x = 300;
+    this.player.x = 150;
     this.player.y = 220;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
@@ -523,7 +532,7 @@ class Game {
       );
     } else if (level === 6) {
       // 1v1: main player (blue) is controlled by WASD, one defender (arrow keys)
-      this.player.x = 310;
+      this.player.x = 160;
       this.player.y = 250;
       this.player.startX = this.player.x;
       this.player.startY = this.player.y;
@@ -770,32 +779,27 @@ function startGame() {
 
   game.loadLevel(selectedLevel);
 
-  document.getElementById("start-btn").style.display = "none";
   document.getElementById("action-buttons").style.display = "flex";
 
   const editor = document.getElementById("game-textbox");
   const scoreboard = document.getElementById("scoreboard");
-  // Show scoreboard for 1v1, textbox for other levels
-  // Hide textbox for 1v1 (6) and AI Agent (5), show for levels 1-5
-  if (selectedLevel === 6 || selectedLevel === 5) {
-    editor.style.display = "none";
-    editor.contentEditable = "false";
-    editor.classList.remove("enabled");
+  // Always show IDE for all levels
+  editor.style.display = "block";
+  editor.contentEditable = "true";
+  editor.classList.add("enabled");
+  editor.innerHTML = "";
+  
+  // Show scoreboard for 1v1 mode (level 6)
+  if (selectedLevel === 6) {
     if (scoreboard) scoreboard.style.display = "block";
     // Always initialize scores for 1v1 mode
-    if (selectedLevel === 6 && window.currentGame) {
+    if (window.currentGame) {
       window.currentGame.playerScore = 0;
       window.currentGame.defenderScore = 0;
     }
-    if (selectedLevel === 6) {
-      document.getElementById("score-player").textContent = "0";
-      document.getElementById("score-defender").textContent = "0";
-    }
+    document.getElementById("score-player").textContent = "0";
+    document.getElementById("score-defender").textContent = "0";
   } else {
-    editor.style.display = "block";
-    editor.contentEditable = "true";
-    editor.classList.add("enabled");
-    editor.innerHTML = "";
     if (scoreboard) scoreboard.style.display = "none";
   }
 
@@ -848,9 +852,13 @@ Game.prototype.showGoalPopup = function () {
     // Keep scoreboard visible
     const scoreboard = document.getElementById("scoreboard");
     if (scoreboard) scoreboard.style.display = "block";
-    // Hide textbox
+    // Keep IDE visible for all levels
     const editor = document.getElementById("game-textbox");
-    if (editor) editor.style.display = "none";
+    if (editor) {
+      editor.style.display = "block";
+      editor.contentEditable = "true";
+      editor.classList.add("enabled");
+    }
     return; // Do NOT show popup for 1v1
   }
   // Call original popup logic
@@ -871,9 +879,14 @@ Game.prototype.showGoalPopup = function () {
     popup.remove();
     if (this.currentLevel < 5) {
       this.loadLevel(nextLevel);
-      // Clear code box
+      // Clear code box but keep IDE visible
       const editor = document.getElementById("game-textbox");
-      if (editor) editor.innerHTML = "";
+      if (editor) {
+        editor.innerHTML = "";
+        editor.style.display = "block";
+        editor.contentEditable = "true";
+        editor.classList.add("enabled");
+      }
       // Update level label in dropdown
       const dropdown = document.getElementById("level-dropdown");
       if (dropdown) dropdown.value = nextLevel;
@@ -1194,10 +1207,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
     const val = parseInt(e.target.value);
     const editor = document.getElementById("game-textbox");
-    // Always hide textbox before Start is clicked
-    editor.style.display = "none";
-    editor.contentEditable = "false";
-    editor.classList.remove("enabled");
+    // Always show IDE for all levels
+    editor.style.display = "block";
+    editor.contentEditable = "true";
+    editor.classList.add("enabled");
     if (currentGame) {
       currentGame.loadLevel(val);
       // Reset player
@@ -1212,9 +1225,18 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      // Hide and reset scoreboard if switching to code levels (1-5)
+      // Show/hide scoreboard based on level
       const scoreboard = document.getElementById("scoreboard");
-      if (val >= 1 && val <= 5 && scoreboard) {
+      if (val === 6 && scoreboard) {
+        scoreboard.style.display = "block";
+        // Initialize scores for 1v1 mode
+        if (currentGame) {
+          currentGame.playerScore = 0;
+          currentGame.defenderScore = 0;
+        }
+        document.getElementById("score-player").textContent = "0";
+        document.getElementById("score-defender").textContent = "0";
+      } else if (val >= 1 && val <= 5 && scoreboard) {
         scoreboard.style.display = "none";
         document.getElementById("score-player").textContent = "0";
         document.getElementById("score-defender").textContent = "0";
@@ -1270,4 +1292,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
     }
   });
+
+  // Auto-start the game when page loads
+  startGame();
 });
