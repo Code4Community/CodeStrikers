@@ -543,47 +543,53 @@ class Game {
   }
 
   async executeUserCode(code, shouldStop) {
-    if (this.isExecuting) {
-      alert("Code is already running!");
-      return;
-    }
-
-    // Reset player to starting position before running code
-    this.player.reset();
-
-    this.isExecuting = true;
-
-    // Parse the code into commands
-    const commands = code
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    console.log("Executing commands:", commands);
-
-    // Execute each command with animation delay
-    for (const command of commands) {
-      if (shouldStop && shouldStop()) break;
-      await new Promise((resolve) => setTimeout(resolve, 400)); // 400ms delay between moves
-      if (shouldStop && shouldStop()) break;
-
-      if (command.includes("moveRight()")) {
-        await this.player.moveRight();
-      } else if (command.includes("moveLeft()")) {
-        await this.player.moveLeft();
-      } else if (command.includes("moveUp()")) {
-        await this.player.moveUp();
-      } else if (command.includes("moveDown()")) {
-        await this.player.moveDown();
-      } else if (command.includes("shootBall()")) {
-        await this.player.shootBall();
-      } else {
-        console.warn(`Unknown command: ${command}`);
-      }
-    }
-
-    this.isExecuting = false;
-    console.log("Code execution complete!");
+  if (this.isExecuting) {
+    alert("Code is already running!");
+    return;
   }
+
+  // Reset player and ball before running code
+  this.player.reset();
+
+  // Reset soccer ball position (center of field)
+  this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+  this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+  this.soccerBall.isStuck = false;
+
+  this.isExecuting = true;
+
+  // Split and clean user code lines
+  const commands = code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  console.log("Executing commands:", commands);
+
+  // Execute each command sequentially
+  for (const command of commands) {
+    if (shouldStop && shouldStop()) break;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    if (shouldStop && shouldStop()) break;
+
+    if (command.includes("moveRight()")) {
+      await this.player.moveRight();
+    } else if (command.includes("moveLeft()")) {
+      await this.player.moveLeft();
+    } else if (command.includes("moveUp()")) {
+      await this.player.moveUp();
+    } else if (command.includes("moveDown()")) {
+      await this.player.moveDown();
+    } else if (command.includes("shootBall()")) {
+      await this.player.shootBall();
+    } else {
+      console.warn(`Unknown command: ${command}`);
+    }
+  }
+
+  this.isExecuting = false;
+  console.log("Code execution complete!");
+}
+
 
   handleDefenderControls(e) {
     // Only allow in 1v1 (level 6)
