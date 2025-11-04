@@ -1058,6 +1058,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Handle paste events to strip HTML and paste only plain text
+  editor.addEventListener("paste", function (e) {
+    if (!editor.isContentEditable) return;
+
+    e.preventDefault();
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+
+    // Get plain text from clipboard
+    const clipboardData = e.clipboardData || window.clipboardData;
+    const pastedText = clipboardData.getData("text/plain");
+
+    if (pastedText) {
+      // Delete selected content
+      range.deleteContents();
+
+      // Insert plain text only
+      const textNode = document.createTextNode(pastedText);
+      range.insertNode(textNode);
+
+      // Move cursor to end of inserted text
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Trigger input event to reapply syntax highlighting
+      editor.dispatchEvent(new Event("input"));
+    }
+  });
+
   document.getElementById("clear-btn").addEventListener("click", () => {
     if (confirm("Are you sure you want to clear your code?")) {
       const editor = document.getElementById("game-textbox");
