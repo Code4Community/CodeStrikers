@@ -770,9 +770,9 @@ function startGame() {
   canvas.width = 888;
   canvas.height = 613;
 
-  const selectedLevel = parseInt(
-    document.getElementById("level-dropdown").value
-  );
+  const levelDropdown = document.getElementById("level-dropdown");
+  const selectedValue = levelDropdown.value;
+  const selectedLevel = parseInt(selectedValue);
   const game = new Game(canvas);
   window.setCurrentGame(game);
 
@@ -785,21 +785,21 @@ function startGame() {
   // Show/hide IDE textbox based on level
   const runBtn = document.getElementById("run-btn");
   const clearBtn = document.getElementById("clear-btn");
-  if (selectedLevel === 6) {
+  if (selectedValue === "bot" || selectedLevel === 6) {
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
     editor.innerHTML = "";
-    if (scoreboard) scoreboard.style.display = "block";
+    if (scoreboard && selectedLevel === 6) scoreboard.style.display = "block";
     if (runBtn) runBtn.style.display = "none";
     if (clearBtn) clearBtn.style.display = "none";
     // Always initialize scores for 1v1 mode
-    if (window.currentGame) {
+    if (selectedLevel === 6 && window.currentGame) {
       window.currentGame.playerScore = 0;
       window.currentGame.defenderScore = 0;
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
     }
-    document.getElementById("score-player").textContent = "0";
-    document.getElementById("score-defender").textContent = "0";
   } else {
     editor.style.display = "block";
     editor.contentEditable = "true";
@@ -1192,12 +1192,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const scoreboard = document.getElementById("scoreboard");
       const runBtn = document.getElementById("run-btn");
       const clearBtn = document.getElementById("clear-btn");
-      if (currentGame.currentLevel === 6) {
+      const levelDropdown = document.getElementById("level-dropdown");
+      const selectedValue = levelDropdown.value;
+      if (selectedValue === "bot" || currentGame.currentLevel === 6) {
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard) scoreboard.style.display = "block";
+        if (scoreboard && currentGame.currentLevel === 6)
+          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
@@ -1235,12 +1238,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const scoreboard = document.getElementById("scoreboard");
       const runBtn = document.getElementById("run-btn");
       const clearBtn = document.getElementById("clear-btn");
-      if (currentGame.currentLevel === 6) {
+      const levelDropdown = document.getElementById("level-dropdown");
+      const selectedValue = levelDropdown.value;
+      if (selectedValue === "bot" || currentGame.currentLevel === 6) {
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard) scoreboard.style.display = "block";
+        if (scoreboard && currentGame.currentLevel === 6)
+          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
@@ -1275,12 +1281,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const runBtn = document.getElementById("run-btn");
       const clearBtn = document.getElementById("clear-btn");
       const scoreboard = document.getElementById("scoreboard");
-      if (selectedLevel === 6) {
+      const selectedValue = e.target.value;
+      if (selectedValue === "bot" || selectedLevel === 6) {
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard) scoreboard.style.display = "block";
+        if (scoreboard && selectedLevel === 6)
+          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
