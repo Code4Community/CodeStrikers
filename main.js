@@ -1041,7 +1041,41 @@ function highlightCode(code) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Mode button selection logic
+  const modeButtonsContainer = document.querySelector(".mode-buttons");
+  if (modeButtonsContainer) {
+    const modeButtons =
+      modeButtonsContainer.querySelectorAll(".difficulty-btn");
+    modeButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        modeButtons.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+      });
+    });
+  }
+  // Difficulty button selection logic
+  const difficultyGrid = document.querySelector(".difficulty-grid");
+  if (difficultyGrid) {
+    const buttons = difficultyGrid.querySelectorAll(".difficulty-btn");
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buttons.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+      });
+    });
+  }
   const editor = document.getElementById("game-textbox");
+  const difficultyButtons = document.querySelector(".difficulty-buttons");
+  // Hide difficulty buttons on initial load
+  if (difficultyButtons) difficultyButtons.style.display = "none";
 
   editor.addEventListener("input", (e) => {
     if (!editor.isContentEditable) return;
@@ -1077,50 +1111,10 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         } else {
           pos = setCaret(node, pos);
-          if (pos === -1) {
-            return -1;
-          }
         }
+        if (pos === -1) return -1;
       }
       return pos;
-    }
-
-    setCaret(editor, caretPos);
-  });
-
-  editor.addEventListener("keydown", function (e) {
-    if (!editor.isContentEditable) return;
-
-    if (e.key === "(") {
-      e.preventDefault();
-
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-
-      const node = document.createTextNode("()");
-      range.deleteContents();
-      range.insertNode(node);
-
-      range.setStart(node, 1);
-      range.setEnd(node, 1);
-
-      selection.removeAllRanges();
-      selection.addRange(range);
-
-      editor.dispatchEvent(new Event("input"));
-    }
-
-    // Allow Enter key to create new lines (fix double-Enter bug)
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const selection = window.getSelection();
-      if (!selection.rangeCount) return;
-      const range = selection.getRangeAt(0);
-      // Use insertLineBreak for proper new line in contenteditable
-      document.execCommand("insertLineBreak");
-      // Trigger syntax highlighting
-      editor.dispatchEvent(new Event("input"));
     }
   });
 
@@ -1262,6 +1256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scoreboard) scoreboard.style.display = "none";
         if (runBtn) runBtn.style.display = "inline-block";
         if (clearBtn) clearBtn.style.display = "inline-block";
+        if (difficultyButtons) difficultyButtons.style.display = "none";
       }
       updateLevelButtons();
     }
@@ -1319,6 +1314,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateLevelButtons();
     }
   });
+
   // Also patch the level dropdown change event
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
     const selectedValue = e.target.value;
@@ -1327,9 +1323,10 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedLevel = "bot";
     }
     if (currentGame) {
+      const difficultyButtons = document.querySelector(".difficulty-buttons");
       if (selectedValue === "bot") {
         // Bot mode
-        currentGame.loadLevel("bot"); // Use bot mode for defender
+        currentGame.loadLevel("bot");
         // Hide IDE and scoreboard
         const editor = document.getElementById("game-textbox");
         const runBtn = document.getElementById("run-btn");
@@ -1344,8 +1341,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scoreboard) scoreboard.style.display = "none";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
+        if (difficultyButtons) difficultyButtons.style.display = "flex";
       } else if (selectedValue === "6") {
         // 1v1 mode
+        if (difficultyButtons) difficultyButtons.style.display = "none";
         currentGame.loadLevel(6);
         currentGame.player.reset();
         if (currentGame.soccerBall) {
@@ -1377,6 +1376,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (clearBtn) clearBtn.style.display = "none";
       } else {
         // All other levels
+        if (difficultyButtons) difficultyButtons.style.display = "none";
         currentGame.loadLevel(selectedLevel);
         currentGame.player.reset();
         if (currentGame.soccerBall) {

@@ -1,3 +1,123 @@
+.timed-btn {
+  background: linear-gradient(90deg, #e0e7ff 0%, #3f51b5 100%);
+  color: #1a237e;
+}
+.toscore-btn {
+  background: linear-gradient(90deg, #ffe0e0 0%, #ff1744 100%);
+  color: #b71c1c;
+}
+.freeplay-btn {
+  background: linear-gradient(90deg, #e0ffe0 0%, #00c853 100%);
+  color: #004d40;
+}
+/* Difficulty Buttons Styling */
+/* Mode Buttons Styling */
+.mode-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.difficulty-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px; /* Move buttons closer to top */
+  gap: 0;
+}
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 32px 40px; /* More space between buttons */
+  width: 340px;
+  margin-bottom: 56px; /* Increased gap before mode buttons */
+}
+
+.mode-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 40px;
+  width: 340px;
+}
+
+.timed-btn,
+.toscore-btn,
+.freeplay-btn {
+  width: 100%;
+}
+
+.difficulty-btn {
+  font-size: 1.1em;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 18px 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  letter-spacing: 1px;
+}
+
+.difficulty-btn.selected,
+.difficulty-btn:disabled {
+  opacity: 0.6;
+  box-shadow: 0 0 0 3px #ffd700, 0 2px 8px rgba(0, 0, 0, 0.08);
+  outline: none;
+  cursor: not-allowed;
+}
+
+.start-btn {
+  display: block;
+  width: 40%;
+  min-width: 100px;
+  max-width: 140px;
+  margin: 0 auto;
+  margin-top: 32px;
+  font-size: 1.1em;
+  padding: 18px 0;
+}
+.difficulty-btn {
+  font-size: 1.1em;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  letter-spacing: 1px;
+}
+.easy-btn {
+  background: linear-gradient(90deg, #b2ffb2 0%, #4caf50 100%);
+  color: #1b5e20;
+}
+.medium-btn {
+  background: linear-gradient(90deg, #ffe082 0%, #ff9800 100%);
+  color: #bf360c;
+}
+.hard-btn {
+  background: linear-gradient(90deg, #ffb2b2 0%, #e53935 100%);
+  color: #b71c1c;
+}
+.impossible-btn {
+  background: linear-gradient(90deg, #b2cfff 0%, #3949ab 100%);
+  color: #0d1333;
+}
+.start-btn {
+  background: linear-gradient(90deg, #fffde7 0%, #fbc02d 100%);
+  color: #795548;
+}
+.difficulty-btn:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px) scale(1.03);
+}
 #game-textbox:focus {
   box-shadow: 0 0 0 8px #00eaff, 0 0 64px 32px #00eaff, 0 0 256px 128px #00eaff,
     0 0 512px 256px #00eaff;
