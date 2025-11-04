@@ -785,22 +785,53 @@ function startGame() {
   // Show/hide IDE textbox based on level
   const runBtn = document.getElementById("run-btn");
   const clearBtn = document.getElementById("clear-btn");
-  if (selectedValue === "bot" || selectedLevel === 6) {
+  const start1v1Btn = document.getElementById("start-1v1-btn");
+  if (selectedLevel === 6) {
+    // 1v1 mode
+    if (scoreboard) scoreboard.style.display = "none";
+    if (start1v1Btn) {
+      start1v1Btn.style.display = "block";
+      start1v1Btn.onclick = () => {
+        if (window.currentGame) {
+          window.currentGame.playerScore = 0;
+          window.currentGame.defenderScore = 0;
+          document.getElementById("score-player").textContent = "0";
+          document.getElementById("score-defender").textContent = "0";
+          window.currentGame.loadLevel(6);
+        }
+        if (scoreboard) scoreboard.style.display = "block";
+        start1v1Btn.style.display = "none";
+        // Mark that scoreboard has been started for 1v1
+        window._scoreboardStarted1v1 = true;
+      };
+    }
+    // Reset scoreboard started flag on entering 1v1
+    window._scoreboardStarted1v1 = false;
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
     editor.innerHTML = "";
-    if (scoreboard && selectedLevel === 6) scoreboard.style.display = "block";
     if (runBtn) runBtn.style.display = "none";
     if (clearBtn) clearBtn.style.display = "none";
-    // Always initialize scores for 1v1 mode
-    if (selectedLevel === 6 && window.currentGame) {
+    if (window.currentGame) {
       window.currentGame.playerScore = 0;
       window.currentGame.defenderScore = 0;
       document.getElementById("score-player").textContent = "0";
       document.getElementById("score-defender").textContent = "0";
     }
+  } else if (selectedValue === "bot") {
+    // Bot mode
+    if (start1v1Btn) start1v1Btn.style.display = "none";
+    editor.style.display = "none";
+    editor.contentEditable = "false";
+    editor.classList.remove("enabled");
+    editor.innerHTML = "";
+    if (scoreboard) scoreboard.style.display = "none";
+    if (runBtn) runBtn.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "none";
   } else {
+    // All other levels
+    if (start1v1Btn) start1v1Btn.style.display = "none";
     editor.style.display = "block";
     editor.contentEditable = "true";
     editor.classList.add("enabled");
@@ -1194,16 +1225,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const clearBtn = document.getElementById("clear-btn");
       const levelDropdown = document.getElementById("level-dropdown");
       const selectedValue = levelDropdown.value;
-      if (selectedValue === "bot" || currentGame.currentLevel === 6) {
+      const start1v1Btn = document.getElementById("start-1v1-btn");
+      if (currentGame.currentLevel === 6) {
+        if (window._scoreboardStarted1v1) {
+          if (scoreboard) scoreboard.style.display = "block";
+          if (start1v1Btn) start1v1Btn.style.display = "none";
+        } else {
+          if (scoreboard) scoreboard.style.display = "none";
+          if (start1v1Btn) start1v1Btn.style.display = "block";
+        }
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard && currentGame.currentLevel === 6)
-          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
+        if (start1v1Btn) start1v1Btn.style.display = "none";
         editor.style.display = "block";
         editor.contentEditable = "true";
         editor.classList.add("enabled");
@@ -1240,16 +1278,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const clearBtn = document.getElementById("clear-btn");
       const levelDropdown = document.getElementById("level-dropdown");
       const selectedValue = levelDropdown.value;
-      if (selectedValue === "bot" || currentGame.currentLevel === 6) {
+      const start1v1Btn = document.getElementById("start-1v1-btn");
+      if (currentGame.currentLevel === 6) {
+        if (window._scoreboardStarted1v1) {
+          if (scoreboard) scoreboard.style.display = "block";
+          if (start1v1Btn) start1v1Btn.style.display = "none";
+        } else {
+          if (scoreboard) scoreboard.style.display = "none";
+          if (start1v1Btn) start1v1Btn.style.display = "block";
+        }
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard && currentGame.currentLevel === 6)
-          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
+        if (start1v1Btn) start1v1Btn.style.display = "none";
         editor.style.display = "block";
         editor.contentEditable = "true";
         editor.classList.add("enabled");
@@ -1282,16 +1327,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const clearBtn = document.getElementById("clear-btn");
       const scoreboard = document.getElementById("scoreboard");
       const selectedValue = e.target.value;
-      if (selectedValue === "bot" || selectedLevel === 6) {
+      const start1v1Btn = document.getElementById("start-1v1-btn");
+      if (selectedLevel === 6) {
+        if (window._scoreboardStarted1v1) {
+          if (scoreboard) scoreboard.style.display = "block";
+          if (start1v1Btn) start1v1Btn.style.display = "none";
+        } else {
+          if (scoreboard) scoreboard.style.display = "none";
+          if (start1v1Btn) start1v1Btn.style.display = "block";
+        }
         editor.style.display = "none";
         editor.contentEditable = "false";
         editor.classList.remove("enabled");
         editor.innerHTML = "";
-        if (scoreboard && selectedLevel === 6)
-          scoreboard.style.display = "block";
         if (runBtn) runBtn.style.display = "none";
         if (clearBtn) clearBtn.style.display = "none";
       } else {
+        if (start1v1Btn) start1v1Btn.style.display = "none";
         editor.style.display = "block";
         editor.contentEditable = "true";
         editor.classList.add("enabled");
