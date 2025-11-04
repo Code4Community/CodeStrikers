@@ -753,6 +753,7 @@ class Game {
   }
 }
 
+// Test comment
 function startGame() {
   // Ensure window is focused for keyboard events
   window.focus();
