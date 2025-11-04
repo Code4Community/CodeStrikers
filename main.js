@@ -552,53 +552,52 @@ class Game {
   }
 
   async executeUserCode(code, shouldStop) {
-  if (this.isExecuting) {
-    alert("Code is already running!");
-    return;
-  }
-
-  // Reset player and ball before running code
-  this.player.reset();
-
-  // Reset soccer ball position (center of field)
-  this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
-  this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
-  this.soccerBall.isStuck = false;
-
-  this.isExecuting = true;
-
-  // Split and clean user code lines
-  const commands = code
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  console.log("Executing commands:", commands);
-
-  // Execute each command sequentially
-  for (const command of commands) {
-    if (shouldStop && shouldStop()) break;
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    if (shouldStop && shouldStop()) break;
-
-    if (command.includes("moveRight()")) {
-      await this.player.moveRight();
-    } else if (command.includes("moveLeft()")) {
-      await this.player.moveLeft();
-    } else if (command.includes("moveUp()")) {
-      await this.player.moveUp();
-    } else if (command.includes("moveDown()")) {
-      await this.player.moveDown();
-    } else if (command.includes("shootBall()")) {
-      await this.player.shootBall();
-    } else {
-      console.warn(`Unknown command: ${command}`);
+    if (this.isExecuting) {
+      alert("Code is already running!");
+      return;
     }
+
+    // Reset player and ball before running code
+    this.player.reset();
+
+    // Reset soccer ball position (center of field)
+    this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+    this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+    this.soccerBall.isStuck = false;
+
+    this.isExecuting = true;
+
+    // Split and clean user code lines
+    const commands = code
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    console.log("Executing commands:", commands);
+
+    // Execute each command sequentially
+    for (const command of commands) {
+      if (shouldStop && shouldStop()) break;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      if (shouldStop && shouldStop()) break;
+
+      if (command.includes("moveRight()")) {
+        await this.player.moveRight();
+      } else if (command.includes("moveLeft()")) {
+        await this.player.moveLeft();
+      } else if (command.includes("moveUp()")) {
+        await this.player.moveUp();
+      } else if (command.includes("moveDown()")) {
+        await this.player.moveDown();
+      } else if (command.includes("shootBall()")) {
+        await this.player.shootBall();
+      } else {
+        console.warn(`Unknown command: ${command}`);
+      }
+    }
+
+    this.isExecuting = false;
+    console.log("Code execution complete!");
   }
-
-  this.isExecuting = false;
-  console.log("Code execution complete!");
-}
-
 
   handleDefenderControls(e) {
     // Only allow in 1v1 (level 6)
@@ -783,15 +782,17 @@ function startGame() {
 
   const editor = document.getElementById("game-textbox");
   const scoreboard = document.getElementById("scoreboard");
-  // Always show IDE for all levels
-  editor.style.display = "block";
-  editor.contentEditable = "true";
-  editor.classList.add("enabled");
-  editor.innerHTML = "";
-  
-  // Show scoreboard for 1v1 mode (level 6)
+  // Show/hide IDE textbox based on level
+  const runBtn = document.getElementById("run-btn");
+  const clearBtn = document.getElementById("clear-btn");
   if (selectedLevel === 6) {
+    editor.style.display = "none";
+    editor.contentEditable = "false";
+    editor.classList.remove("enabled");
+    editor.innerHTML = "";
     if (scoreboard) scoreboard.style.display = "block";
+    if (runBtn) runBtn.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "none";
     // Always initialize scores for 1v1 mode
     if (window.currentGame) {
       window.currentGame.playerScore = 0;
@@ -800,7 +801,13 @@ function startGame() {
     document.getElementById("score-player").textContent = "0";
     document.getElementById("score-defender").textContent = "0";
   } else {
+    editor.style.display = "block";
+    editor.contentEditable = "true";
+    editor.classList.add("enabled");
+    editor.innerHTML = "";
     if (scoreboard) scoreboard.style.display = "none";
+    if (runBtn) runBtn.style.display = "inline-block";
+    if (clearBtn) clearBtn.style.display = "inline-block";
   }
 
   function animate() {
@@ -852,12 +859,13 @@ Game.prototype.showGoalPopup = function () {
     // Keep scoreboard visible
     const scoreboard = document.getElementById("scoreboard");
     if (scoreboard) scoreboard.style.display = "block";
-    // Keep IDE visible for all levels
+    // Hide IDE textbox for 1v1
     const editor = document.getElementById("game-textbox");
     if (editor) {
-      editor.style.display = "block";
-      editor.contentEditable = "true";
-      editor.classList.add("enabled");
+      editor.style.display = "none";
+      editor.contentEditable = "false";
+      editor.classList.remove("enabled");
+      editor.innerHTML = "";
     }
     return; // Do NOT show popup for 1v1
   }
@@ -1179,6 +1187,28 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
+      // Hide/show textbox and scoreboard for 1v1
+      const editor = document.getElementById("game-textbox");
+      const scoreboard = document.getElementById("scoreboard");
+      const runBtn = document.getElementById("run-btn");
+      const clearBtn = document.getElementById("clear-btn");
+      if (currentGame.currentLevel === 6) {
+        editor.style.display = "none";
+        editor.contentEditable = "false";
+        editor.classList.remove("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "block";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      } else {
+        editor.style.display = "block";
+        editor.contentEditable = "true";
+        editor.classList.add("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "none";
+        if (runBtn) runBtn.style.display = "inline-block";
+        if (clearBtn) clearBtn.style.display = "inline-block";
+      }
       updateLevelButtons();
     }
   });
@@ -1200,23 +1230,38 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
+      // Hide/show textbox and scoreboard for 1v1
+      const editor = document.getElementById("game-textbox");
+      const scoreboard = document.getElementById("scoreboard");
+      const runBtn = document.getElementById("run-btn");
+      const clearBtn = document.getElementById("clear-btn");
+      if (currentGame.currentLevel === 6) {
+        editor.style.display = "none";
+        editor.contentEditable = "false";
+        editor.classList.remove("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "block";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      } else {
+        editor.style.display = "block";
+        editor.contentEditable = "true";
+        editor.classList.add("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "none";
+        if (runBtn) runBtn.style.display = "inline-block";
+        if (clearBtn) clearBtn.style.display = "inline-block";
+      }
       updateLevelButtons();
     }
   });
-
+  // Also patch the level dropdown change event
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
-    const val = parseInt(e.target.value);
-    const editor = document.getElementById("game-textbox");
-    // Always show IDE for all levels
-    editor.style.display = "block";
-    editor.contentEditable = "true";
-    editor.classList.add("enabled");
+    const selectedLevel = parseInt(e.target.value);
     if (currentGame) {
-      currentGame.loadLevel(val);
-      // Reset player
+      currentGame.loadLevel(selectedLevel);
       currentGame.player.reset();
       if (currentGame.soccerBall) {
-        // Reset popup flags and initial ball position
         currentGame._goalPopupShown = false;
         currentGame._goalPopupActive = false;
         currentGame._ballInitialPos = {
@@ -1225,25 +1270,32 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      // Show/hide scoreboard based on level
+      // Hide/show textbox for 1v1
+      const editor = document.getElementById("game-textbox");
+      const runBtn = document.getElementById("run-btn");
+      const clearBtn = document.getElementById("clear-btn");
       const scoreboard = document.getElementById("scoreboard");
-      if (val === 6 && scoreboard) {
-        scoreboard.style.display = "block";
-        // Initialize scores for 1v1 mode
-        if (currentGame) {
-          currentGame.playerScore = 0;
-          currentGame.defenderScore = 0;
-        }
-        document.getElementById("score-player").textContent = "0";
-        document.getElementById("score-defender").textContent = "0";
-      } else if (val >= 1 && val <= 5 && scoreboard) {
-        scoreboard.style.display = "none";
-        document.getElementById("score-player").textContent = "0";
-        document.getElementById("score-defender").textContent = "0";
+      if (selectedLevel === 6) {
+        editor.style.display = "none";
+        editor.contentEditable = "false";
+        editor.classList.remove("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "block";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      } else {
+        editor.style.display = "block";
+        editor.contentEditable = "true";
+        editor.classList.add("enabled");
+        editor.innerHTML = "";
+        if (scoreboard) scoreboard.style.display = "none";
+        if (runBtn) runBtn.style.display = "inline-block";
+        if (clearBtn) clearBtn.style.display = "inline-block";
       }
-      updateLevelButtons();
     }
   });
+
+  // Removed duplicate level-dropdown change event listener that always shows the textbox
 
   function updateLevelButtons() {
     const backBtn = document.getElementById("back-level-btn");
