@@ -1119,8 +1119,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } else if (modeSelectedBtn && modeSelectedBtn.id === "toscore-btn") {
         const scoreInput = document.getElementById("toscore-score");
-        validInput =
-          scoreInput && scoreInput.value && parseInt(scoreInput.value) > 0;
+        const scoreVal =
+          scoreInput && scoreInput.value ? parseInt(scoreInput.value) : 0;
+        validInput = scoreInput && scoreVal >= 1 && scoreVal <= 100;
+        if (scoreInput && (scoreVal < 1 || scoreVal > 100)) {
+          let popup = document.getElementById("select-popup");
+          if (!popup) {
+            popup = document.createElement("div");
+            popup.id = "select-popup";
+            popup.style.position = "fixed";
+            popup.style.top = "0";
+            popup.style.left = "0";
+            popup.style.width = "100vw";
+            popup.style.height = "100vh";
+            popup.style.background = "rgba(0,0,0,0.35)";
+            popup.style.display = "flex";
+            popup.style.alignItems = "center";
+            popup.style.justifyContent = "center";
+            popup.style.zIndex = "9999";
+            popup.innerHTML = `<div style=\"background: #fffde7; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 32px 40px; text-align: center; font-size: 1.2em; color: #d32f2f; font-weight: 600; max-width: 340px;\"><div style='margin-bottom:18px;'>Please choose a score between 1 and 100.</div><button id='close-select-popup' style='margin-top:10px; padding:8px 24px; font-size:1em; border-radius:8px; border:none; background:#d32f2f; color:#fff; font-weight:600; cursor:pointer;'>Close</button></div>`;
+            document.body.appendChild(popup);
+            document.getElementById("close-select-popup").onclick = () =>
+              popup.remove();
+          }
+          return;
+        }
       }
       if (!difficultySelected || !modeSelectedBtn || !validInput) {
         // Show popup
