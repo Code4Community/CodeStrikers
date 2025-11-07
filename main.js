@@ -1071,8 +1071,31 @@ document.addEventListener("DOMContentLoaded", () => {
       let validInput = true;
       if (modeSelectedBtn && modeSelectedBtn.id === "timed-btn") {
         const timedInput = document.getElementById("timed-minutes");
-        validInput =
-          timedInput && timedInput.value && parseInt(timedInput.value) > 0;
+        const timedVal =
+          timedInput && timedInput.value ? parseInt(timedInput.value) : 0;
+        validInput = timedInput && timedVal >= 1 && timedVal <= 20;
+        if (timedInput && (timedVal < 1 || timedVal > 20)) {
+          let popup = document.getElementById("select-popup");
+          if (!popup) {
+            popup = document.createElement("div");
+            popup.id = "select-popup";
+            popup.style.position = "fixed";
+            popup.style.top = "0";
+            popup.style.left = "0";
+            popup.style.width = "100vw";
+            popup.style.height = "100vh";
+            popup.style.background = "rgba(0,0,0,0.35)";
+            popup.style.display = "flex";
+            popup.style.alignItems = "center";
+            popup.style.justifyContent = "center";
+            popup.style.zIndex = "9999";
+            popup.innerHTML = `<div style="background: #fffde7; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 32px 40px; text-align: center; font-size: 1.2em; color: #d32f2f; font-weight: 600; max-width: 340px;"><div style='margin-bottom:18px;'>Please choose a time between 1 and 20 minutes.</div><button id='close-select-popup' style='margin-top:10px; padding:8px 24px; font-size:1em; border-radius:8px; border:none; background:#d32f2f; color:#fff; font-weight:600; cursor:pointer;'>Close</button></div>`;
+            document.body.appendChild(popup);
+            document.getElementById("close-select-popup").onclick = () =>
+              popup.remove();
+          }
+          return;
+        }
       } else if (modeSelectedBtn && modeSelectedBtn.id === "toscore-btn") {
         const scoreInput = document.getElementById("toscore-score");
         validInput =
@@ -1115,6 +1138,66 @@ document.addEventListener("DOMContentLoaded", () => {
       if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
       if (freeplayMessage) freeplayMessage.style.display = "none";
       startBtn.style.display = "none";
+      // Hide instructional text above difficulty and mode buttons
+      if (
+        difficultyGrid &&
+        difficultyGrid.previousElementSibling &&
+        difficultyGrid.previousElementSibling.textContent.includes(
+          "Select Difficulty"
+        )
+      ) {
+        difficultyGrid.previousElementSibling.style.display = "none";
+      }
+      if (
+        modeButtons &&
+        modeButtons.previousElementSibling &&
+        modeButtons.previousElementSibling.textContent.includes(
+          "Select Game Mode"
+        )
+      ) {
+        modeButtons.previousElementSibling.style.display = "none";
+      }
+      // Show scoreboard and reset scores to 0
+      const scoreboard = document.getElementById("scoreboard");
+      const scorePlayer = document.getElementById("score-player");
+      const scoreDefender = document.getElementById("score-defender");
+      if (scoreboard) {
+        scoreboard.style.display = "block";
+      }
+      if (scorePlayer) scorePlayer.textContent = "0";
+      if (scoreDefender) scoreDefender.textContent = "0";
+      // Show timer if Timed mode is selected
+      const timerContainer = document.getElementById("timer-container");
+      const timerValue = document.getElementById("timer-value");
+      if (
+        modeSelectedBtn &&
+        modeSelectedBtn.id === "timed-btn" &&
+        timerContainer &&
+        timerValue
+      ) {
+        const timedInput = document.getElementById("timed-minutes");
+        let secondsLeft = parseInt(timedInput.value, 10) * 60;
+        function formatTime(sec) {
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          return `${m}:${s.toString().padStart(2, "0")}`;
+        }
+        timerContainer.style.display = "block";
+        timerValue.textContent = formatTime(secondsLeft);
+        if (window._timerInterval) clearInterval(window._timerInterval);
+        window._timerInterval = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft < 0) {
+            clearInterval(window._timerInterval);
+            timerValue.textContent = "0:00";
+            // Optionally: trigger end of game here
+            return;
+          }
+          timerValue.textContent = formatTime(secondsLeft);
+        }, 1000);
+      } else if (timerContainer) {
+        timerContainer.style.display = "none";
+      }
     });
   }
   // Mode button selection logic

@@ -98,7 +98,7 @@
               type="number"
               id="timed-minutes"
               min="1"
-              max="99"
+              max="20"
               value="1"
               class="timed-minutes-input"
             />
@@ -128,6 +128,24 @@
           data-placeholder="Type Code Here..."
         ></pre>
         <div id="scoreboard" style="display: none">
+          <div
+            id="timer-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="timer-label"
+              style="
+                font-size: 1.3em;
+                color: #388e3c;
+                font-weight: bold;
+                background: #e0ffe0;
+                border-radius: 8px;
+                padding: 8px 18px;
+                box-shadow: 0 2px 8px rgba(56, 142, 60, 0.1);
+              "
+              >Time Left: <span id="timer-value">0:00</span></span
+            >
+          </div>
           <div class="score-row">
             <span class="score-label">Player</span>
             <span id="score-player" class="score-value">0</span>
