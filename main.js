@@ -1050,6 +1050,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const timedInputContainer = document.getElementById(
       "timed-input-container"
     );
+    const toscoreBtn = document.getElementById("toscore-btn");
+    const toscoreInputContainer = document.getElementById(
+      "toscore-input-container"
+    );
     modeButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         modeButtons.forEach((b) => {
@@ -1058,11 +1062,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         btn.classList.add("selected");
         btn.disabled = true;
-        // Show/hide time input
+        // Show/hide time and score input
         if (btn === timedBtn) {
           if (timedInputContainer) timedInputContainer.style.display = "block";
+          if (toscoreInputContainer)
+            toscoreInputContainer.style.display = "none";
+        } else if (btn === toscoreBtn) {
+          if (timedInputContainer) timedInputContainer.style.display = "none";
+          if (toscoreInputContainer)
+            toscoreInputContainer.style.display = "block";
         } else {
           if (timedInputContainer) timedInputContainer.style.display = "none";
+          if (toscoreInputContainer)
+            toscoreInputContainer.style.display = "none";
         }
       });
     });

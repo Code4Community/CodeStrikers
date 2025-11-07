@@ -48,7 +48,9 @@
             <button class="difficulty-btn timed-btn" id="timed-btn">
               Timed
             </button>
-            <button class="difficulty-btn toscore-btn">To Score</button>
+            <button class="difficulty-btn toscore-btn" id="toscore-btn">
+              To Score
+            </button>
             <button class="difficulty-btn freeplay-btn">Freeplay</button>
           </div>
           <div
@@ -64,6 +66,20 @@
               class="timed-minutes-input"
             />
             <span class="timed-minutes-label">minutes</span>
+          </div>
+          <div
+            id="toscore-input-container"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="toscore-score"
+              min="1"
+              max="99"
+              placeholder="Enter a score"
+              class="toscore-score-input"
+              style="width: 120px"
+            />
           </div>
           <button class="difficulty-btn start-btn">Start</button>
         </div>

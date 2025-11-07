@@ -1,3 +1,22 @@
+.toscore-score-input {
+  min-width: 170px;
+  padding: 8px 12px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  border: 2px solid #d32f2f;
+  background: linear-gradient(90deg, #ffe0e0 0%, #ffcccc 100%);
+  color: #d32f2f;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.12);
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  text-align: right;
+}
+.toscore-score-input:focus {
+  border-color: #b71c1c;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.18);
+  background: linear-gradient(90deg, #ffe0e0 0%, #ffb2b2 100%);
+}
 .timed-btn {
   background: linear-gradient(90deg, #e0e7ff 0%, #3f51b5 100%);
   color: #1a237e;
@@ -66,11 +85,11 @@
   padding: 8px 12px;
   font-size: 1.1em;
   border-radius: 8px;
-  border: 2px solid #4CAF50;
+  border: 2px solid #4caf50;
   background: linear-gradient(90deg, #e0ffe0 0%, #90ee90 100%);
   color: #1976d2;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(76,175,80,0.12);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.12);
   outline: none;
   transition: border 0.2s, box-shadow 0.2s;
   text-align: right;
@@ -79,7 +98,6 @@
   border-color: #1976d2;
   box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
   background: linear-gradient(90deg, #e0f7fa 0%, #90ee90 100%);
-}
 }
 .timed-minutes-label {
   font-size: 1.1em;
