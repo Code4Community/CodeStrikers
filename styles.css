@@ -1,5 +1,6 @@
 .toscore-score-input {
-  min-width: 170px;
+  min-width: 110px;
+  width: 110px;
   padding: 8px 12px;
   font-size: 1.1em;
   border-radius: 8px;

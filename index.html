@@ -129,6 +129,24 @@
         ></pre>
         <div id="scoreboard" style="display: none">
           <div
+            id="freeplay-timer-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="freeplay-timer-value"
+              style="
+                font-size: 1.3em;
+                color: #388e3c;
+                font-weight: bold;
+                background: #e0ffe0;
+                border-radius: 8px;
+                padding: 8px 18px;
+                box-shadow: 0 2px 8px rgba(56, 142, 60, 0.1);
+              "
+              >0:00</span
+            >
+          </div>
+          <div
             id="timer-container"
             style="display: none; text-align: center; margin-bottom: 8px"
           >
@@ -146,12 +164,48 @@
               >Time Left: <span id="timer-value">0:00</span></span
             >
           </div>
+          <div
+            id="targetscore-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="targetscore-label"
+              style="
+                font-size: 1.1em;
+                color: #d32f2f;
+                font-weight: bold;
+                background: #ffe0e0;
+                border-radius: 8px;
+                padding: 6px 14px;
+                box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
+              "
+              >Target Score: <span id="targetscore-value">0</span></span
+            >
+          </div>
           <div class="score-row">
             <span class="score-label">Player</span>
             <span id="score-player" class="score-value">0</span>
             <span class="score-sep">-</span>
             <span id="score-defender" class="score-value">0</span>
             <span class="score-label">Defender</span>
+          </div>
+          <div
+            id="targetscore-container"
+            style="display: none; text-align: center; margin-top: 8px"
+          >
+            <span
+              id="targetscore-label"
+              style="
+                font-size: 1.1em;
+                color: #d32f2f;
+                font-weight: bold;
+                background: #ffe0e0;
+                border-radius: 8px;
+                padding: 6px 14px;
+                box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
+              "
+              >Target Score: <span id="targetscore-value">0</span></span
+            >
           </div>
         </div>
         <div class="scoreboard-actions">

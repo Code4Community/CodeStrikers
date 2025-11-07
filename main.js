@@ -452,10 +452,12 @@ class Game {
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
         this.playerScore++;
         document.getElementById("score-player").textContent = this.playerScore;
+        checkScoreCloseToWin();
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
         this.defenderScore++;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
+        checkScoreCloseToWin();
       }
       // After scoring, reset the level to keep both players and ball visible
       this.loadLevel(6);
@@ -1048,6 +1050,25 @@ document.addEventListener("DOMContentLoaded", () => {
     if (difficultyGrid) difficultyGrid.style.display = "grid";
     if (modeButtons) modeButtons.style.display = "flex";
     if (startBtn) startBtn.style.display = "block";
+    // Restore instructional text visibility
+    if (
+      difficultyGrid &&
+      difficultyGrid.previousElementSibling &&
+      difficultyGrid.previousElementSibling.textContent.includes(
+        "Select Difficulty"
+      )
+    ) {
+      difficultyGrid.previousElementSibling.style.display = "block";
+    }
+    if (
+      modeButtons &&
+      modeButtons.previousElementSibling &&
+      modeButtons.previousElementSibling.textContent.includes(
+        "Select Game Mode"
+      )
+    ) {
+      modeButtons.previousElementSibling.style.display = "block";
+    }
   }
   // Hide all buttons when Start is clicked, but only if all required selections/inputs are made
   const startBtn = document.querySelector(".start-btn");
@@ -1166,7 +1187,104 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (scorePlayer) scorePlayer.textContent = "0";
       if (scoreDefender) scoreDefender.textContent = "0";
+      window._lastScoreMessage = null;
       // Show timer if Timed mode is selected
+      // Show target score if To Score mode is selected
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const targetScoreValue = document.getElementById("targetscore-value");
+      let targetScore = 0;
+      if (
+        modeSelectedBtn &&
+        modeSelectedBtn.id === "toscore-btn" &&
+        targetScoreContainer &&
+        targetScoreValue
+      ) {
+        const scoreInput = document.getElementById("toscore-score");
+        targetScore =
+          scoreInput && scoreInput.value ? parseInt(scoreInput.value) : 0;
+        targetScoreContainer.style.display = "block";
+        targetScoreValue.textContent = targetScore;
+        window._targetScore = targetScore;
+      } else if (targetScoreContainer) {
+        targetScoreContainer.style.display = "none";
+        window._targetScore = undefined;
+      }
+      // Show timer for Freeplay mode (counts up)
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      const freeplayTimerValue = document.getElementById(
+        "freeplay-timer-value"
+      );
+      if (
+        modeSelectedBtn &&
+        modeSelectedBtn.id === "freeplay-btn" &&
+        freeplayTimerContainer &&
+        freeplayTimerValue
+      ) {
+        let secondsElapsed = 0;
+        function formatTime(sec) {
+          const m = Math.floor(sec / 60);
+          const s = sec % 60;
+          return `${m}:${s.toString().padStart(2, "0")}`;
+        }
+        freeplayTimerContainer.style.display = "block";
+        freeplayTimerValue.textContent = formatTime(secondsElapsed);
+        if (window._freeplayTimerInterval)
+          clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = setInterval(() => {
+          secondsElapsed++;
+          freeplayTimerValue.textContent = formatTime(secondsElapsed);
+        }, 1000);
+      } else if (freeplayTimerContainer) {
+        freeplayTimerContainer.style.display = "none";
+        if (window._freeplayTimerInterval)
+          clearInterval(window._freeplayTimerInterval);
+      }
+      // Show message if player or defender is one point away from target score
+      function checkScoreCloseToWin() {
+        const targetScore = window._targetScore;
+        if (!targetScore) return;
+        const scorePlayer = document.getElementById("score-player");
+        const scoreDefender = document.getElementById("score-defender");
+        if (!scorePlayer || !scoreDefender) return;
+        const playerScore = parseInt(scorePlayer.textContent);
+        const defenderScore = parseInt(scoreDefender.textContent);
+        let message = "";
+        if (targetScore - playerScore === 1) {
+          message = "Player needs one more point to win!";
+        } else if (targetScore - defenderScore === 1) {
+          message = "Defender needs one more point to win!";
+        }
+        if (message && window._lastScoreMessage !== message) {
+          let popup = document.getElementById("score-close-popup");
+          if (!popup) {
+            popup = document.createElement("div");
+            popup.id = "score-close-popup";
+            popup.style.position = "fixed";
+            popup.style.top = "0";
+            popup.style.left = "0";
+            popup.style.width = "100vw";
+            popup.style.height = "100vh";
+            popup.style.background = "rgba(0,0,0,0.35)";
+            popup.style.display = "flex";
+            popup.style.alignItems = "center";
+            popup.style.justifyContent = "center";
+            popup.style.zIndex = "9999";
+            popup.innerHTML = `<div style=\"background: #fffde7; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 32px 40px; text-align: center; font-size: 1.2em; color: #d32f2f; font-weight: 600; max-width: 340px;\"><div style='margin-bottom:18px;'>${message}</div><button id='close-score-close-popup' style='margin-top:10px; padding:8px 24px; font-size:1em; border-radius:8px; border:none; background:#d32f2f; color:#fff; font-weight:600; cursor:pointer;'>Close</button></div>`;
+            document.body.appendChild(popup);
+            document.getElementById("close-score-close-popup").onclick = () =>
+              popup.remove();
+          }
+          window._lastScoreMessage = message;
+        } else if (!message) {
+          const popup = document.getElementById("score-close-popup");
+          if (popup) popup.remove();
+          window._lastScoreMessage = null;
+        }
+      }
       const timerContainer = document.getElementById("timer-container");
       const timerValue = document.getElementById("timer-value");
       if (
