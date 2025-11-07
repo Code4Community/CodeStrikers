@@ -1041,6 +1041,36 @@ function highlightCode(code) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  function showAllGameButtons() {
+    const difficultyGrid = document.querySelector(".difficulty-grid");
+    const modeButtons = document.querySelector(".mode-buttons");
+    const startBtn = document.querySelector(".start-btn");
+    if (difficultyGrid) difficultyGrid.style.display = "grid";
+    if (modeButtons) modeButtons.style.display = "flex";
+    if (startBtn) startBtn.style.display = "block";
+  }
+  // Hide all buttons when Start is clicked
+  const startBtn = document.querySelector(".start-btn");
+  if (startBtn) {
+    startBtn.addEventListener("click", () => {
+      // Hide difficulty grid, mode buttons, input containers, and Start button
+      const difficultyGrid = document.querySelector(".difficulty-grid");
+      const modeButtons = document.querySelector(".mode-buttons");
+      const timedInputContainer = document.getElementById(
+        "timed-input-container"
+      );
+      const toscoreInputContainer = document.getElementById(
+        "toscore-input-container"
+      );
+      const freeplayMessage = document.getElementById("freeplay-message");
+      if (difficultyGrid) difficultyGrid.style.display = "none";
+      if (modeButtons) modeButtons.style.display = "none";
+      if (timedInputContainer) timedInputContainer.style.display = "none";
+      if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
+      if (freeplayMessage) freeplayMessage.style.display = "none";
+      startBtn.style.display = "none";
+    });
+  }
   // Mode button selection logic
   const modeButtonsContainer = document.querySelector(".mode-buttons");
   if (modeButtonsContainer) {
@@ -1054,6 +1084,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const toscoreInputContainer = document.getElementById(
       "toscore-input-container"
     );
+    const freeplayBtn = document.getElementById("freeplay-btn");
+    const freeplayMessage = document.getElementById("freeplay-message");
     modeButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         modeButtons.forEach((b) => {
@@ -1062,19 +1094,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         btn.classList.add("selected");
         btn.disabled = true;
-        // Show/hide time and score input
+        // Show/hide time, score input, and freeplay message
         if (btn === timedBtn) {
           if (timedInputContainer) timedInputContainer.style.display = "block";
           if (toscoreInputContainer)
             toscoreInputContainer.style.display = "none";
+          if (freeplayMessage) freeplayMessage.style.display = "none";
         } else if (btn === toscoreBtn) {
           if (timedInputContainer) timedInputContainer.style.display = "none";
           if (toscoreInputContainer)
             toscoreInputContainer.style.display = "block";
+          if (freeplayMessage) freeplayMessage.style.display = "none";
+        } else if (btn === freeplayBtn) {
+          if (timedInputContainer) timedInputContainer.style.display = "none";
+          if (toscoreInputContainer)
+            toscoreInputContainer.style.display = "none";
+          if (freeplayMessage) freeplayMessage.style.display = "block";
         } else {
           if (timedInputContainer) timedInputContainer.style.display = "none";
           if (toscoreInputContainer)
             toscoreInputContainer.style.display = "none";
+          if (freeplayMessage) freeplayMessage.style.display = "none";
         }
       });
     });
@@ -1237,6 +1277,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentGame = null;
 
   document.getElementById("next-level-btn").addEventListener("click", () => {
+    showAllGameButtons();
     if (currentGame && currentGame.currentLevel < 5) {
       currentGame.loadLevel(currentGame.currentLevel + 1);
       document.getElementById("level-dropdown").value =
@@ -1291,6 +1332,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("back-level-btn").addEventListener("click", () => {
+    showAllGameButtons();
     if (currentGame && currentGame.currentLevel > 1) {
       currentGame.loadLevel(currentGame.currentLevel - 1);
       document.getElementById("level-dropdown").value =
@@ -1345,6 +1387,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Also patch the level dropdown change event
   document.getElementById("level-dropdown").addEventListener("change", (e) => {
+    showAllGameButtons();
     const selectedValue = e.target.value;
     let selectedLevel = parseInt(selectedValue);
     if (selectedValue === "bot") {
