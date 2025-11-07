@@ -45,9 +45,25 @@
             <button class="difficulty-btn impossible-btn">Impossible</button>
           </div>
           <div class="mode-buttons">
-            <button class="difficulty-btn timed-btn">Timed</button>
+            <button class="difficulty-btn timed-btn" id="timed-btn">
+              Timed
+            </button>
             <button class="difficulty-btn toscore-btn">To Score</button>
             <button class="difficulty-btn freeplay-btn">Freeplay</button>
+          </div>
+          <div
+            id="timed-input-container"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="timed-minutes"
+              min="1"
+              max="99"
+              value="1"
+              class="timed-minutes-input"
+            />
+            <span class="timed-minutes-label">minutes</span>
           </div>
           <button class="difficulty-btn start-btn">Start</button>
         </div>

@@ -23,17 +23,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 32px; /* Move buttons closer to top */
+  margin-top: 32px;
   gap: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .difficulty-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 32px 40px; /* More space between buttons */
-  width: 340px;
-  margin-bottom: 56px; /* Increased gap before mode buttons */
+  gap: 32px 40px;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 40px;
 }
 
 .mode-buttons {
@@ -41,14 +44,48 @@
   flex-direction: row;
   justify-content: center;
   gap: 32px;
-  margin-bottom: 40px;
-  width: 340px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 340px;
 }
 
 .timed-btn,
 .toscore-btn,
 .freeplay-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  width: 100%;
+  max-width: 340px;
+}
+.timed-minutes-input {
+  width: 60px;
+  padding: 8px 12px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  border: 2px solid #4CAF50;
+  background: linear-gradient(90deg, #e0ffe0 0%, #90ee90 100%);
+  color: #1976d2;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(76,175,80,0.12);
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  text-align: right;
+}
+.timed-minutes-input:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
+  background: linear-gradient(90deg, #e0f7fa 0%, #90ee90 100%);
+}
+}
+.timed-minutes-label {
+  font-size: 1.1em;
+  color: #4caf50;
+  font-weight: 500;
+  margin-left: 2px;
 }
 
 .difficulty-btn {

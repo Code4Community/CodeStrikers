@@ -1046,6 +1046,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (modeButtonsContainer) {
     const modeButtons =
       modeButtonsContainer.querySelectorAll(".difficulty-btn");
+    const timedBtn = document.getElementById("timed-btn");
+    const timedInputContainer = document.getElementById(
+      "timed-input-container"
+    );
     modeButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         modeButtons.forEach((b) => {
@@ -1054,8 +1058,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         btn.classList.add("selected");
         btn.disabled = true;
+        // Show/hide time input
+        if (btn === timedBtn) {
+          if (timedInputContainer) timedInputContainer.style.display = "block";
+        } else {
+          if (timedInputContainer) timedInputContainer.style.display = "none";
+        }
       });
     });
+    // Only use minutes input for timer duration
+    window.getTimedModeDuration = function () {
+      const min =
+        parseInt(document.getElementById("timed-minutes").value, 10) || 1;
+      return min * 60;
+    };
   }
   // Difficulty button selection logic
   const difficultyGrid = document.querySelector(".difficulty-grid");
