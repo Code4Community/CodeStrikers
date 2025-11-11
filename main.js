@@ -623,153 +623,58 @@ class Game {
   }
 
   updateSmoothMovement() {
-    // Ball bump/kick on contact for both players in 1v1
-    if (this.currentLevel === 6 && this.soccerBall) {
-      if (!this._kickCooldown)
-        this._kickCooldown = { main: false, defender: false };
-      const mainFeet = this.player.getFeetBox();
-      const ballBox = this.soccerBall.getBox();
-      // Main player (WASD)
-      const mainDir = this.getPlayerDirection("main");
-      if (
-        Game.rectsOverlap(mainFeet, ballBox) &&
-        (mainDir.dx !== 0 || mainDir.dy !== 0)
-      ) {
-        // Check if player is behind the ball (can push it forward)
-        const playerRight = this.player.x + this.player.width;
-        const ballLeft = this.soccerBall.x;
-        const isPlayerBehindBall = playerRight > ballLeft + 5; // Player is behind if overlapping/past ball
-
-        if (!this._kickCooldown.main) {
-          const kickSpeed = 14;
-          let canKick = false;
-          let kickDx = 0;
-          let kickDy = 0;
-
-          // Allow forward (right) movement only if behind the ball
-          if (mainDir.dx > 0 && isPlayerBehindBall) {
-            canKick = true;
-            kickDx = mainDir.dx * kickSpeed;
-          }
-          // Allow backward (left) movement only if behind the ball
-          else if (mainDir.dx < 0 && isPlayerBehindBall) {
-            canKick = true;
-            kickDx = mainDir.dx * kickSpeed;
-          }
-          // Always allow up/down movement regardless of position
-          if (mainDir.dy !== 0) {
-            canKick = true;
-            kickDy = mainDir.dy * kickSpeed;
-          }
-
-          if (canKick) {
-            this.soccerBall.x += kickDx;
-            this.soccerBall.y += kickDy;
-            this.soccerBall.x = Math.max(
-              0,
-              Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
-            );
-            this.soccerBall.y = Math.max(
-              0,
-              Math.min(this.height - this.soccerBall.height, this.soccerBall.y)
-            );
-            this._kickCooldown.main = true;
-            setTimeout(() => {
-              this._kickCooldown.main = false;
-            }, 180);
-          }
-        }
-      } else {
-        this._kickCooldown.main = false;
+    // 1v1 mode movement
+    if (this.currentLevel === 6) {
+      // ...existing 1v1 movement logic...
+      const speed = 4;
+      let dx = 0,
+        dy = 0;
+      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
+      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
+      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
+      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
+      if (dx !== 0 || dy !== 0) {
+        this.player.x = Math.max(
+          0,
+          Math.min(this.width - this.player.width, this.player.x + dx)
+        );
+        this.player.y = Math.max(
+          0,
+          Math.min(this.height - this.player.height, this.player.y + dy)
+        );
       }
       // Defender (arrow keys)
-      if (this.defenders[0]) {
-        const defFeet = this.defenders[0].getFeetBox();
-        const defDir = this.getPlayerDirection("defender");
-        if (
-          Game.rectsOverlap(defFeet, ballBox) &&
-          (defDir.dx !== 0 || defDir.dy !== 0)
-        ) {
-          // Check if defender is behind the ball (left side, so can push it left)
-          const defenderLeft = this.defenders[0].x;
-          const ballRight = this.soccerBall.x + this.soccerBall.width;
-          const isDefenderBehindBall = defenderLeft < ballRight - 5; // Defender is behind if to the left
-
-          if (!this._kickCooldown.defender) {
-            const kickSpeed = 14;
-            let canKick = false;
-            let kickDx = 0;
-            let kickDy = 0;
-
-            // Allow backward (left) movement only if behind the ball
-            if (defDir.dx < 0 && isDefenderBehindBall) {
-              canKick = true;
-              kickDx = defDir.dx * kickSpeed;
-            }
-            // Allow forward (right) movement only if behind the ball
-            else if (defDir.dx > 0 && isDefenderBehindBall) {
-              canKick = true;
-              kickDx = defDir.dx * kickSpeed;
-            }
-            // Always allow up/down movement regardless of position
-            if (defDir.dy !== 0) {
-              canKick = true;
-              kickDy = defDir.dy * kickSpeed;
-            }
-
-            if (canKick) {
-              this.soccerBall.x += kickDx;
-              this.soccerBall.y += kickDy;
-              this.soccerBall.x = Math.max(
-                0,
-                Math.min(this.width - this.soccerBall.width, this.soccerBall.x)
-              );
-              this.soccerBall.y = Math.max(
-                0,
-                Math.min(
-                  this.height - this.soccerBall.height,
-                  this.soccerBall.y
-                )
-              );
-              this._kickCooldown.defender = true;
-              setTimeout(() => {
-                this._kickCooldown.defender = false;
-              }, 180);
-            }
-          }
-        } else {
-          this._kickCooldown.defender = false;
-        }
-      }
-    }
-    if (this.currentLevel !== 6) return;
-    const speed = 4;
-    // Main player (WASD)
-    let dx = 0,
+      dx = 0;
       dy = 0;
-    if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
-    if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
-    if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
-    if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
-    if (dx !== 0 || dy !== 0) {
-      this.player.x = Math.max(
-        0,
-        Math.min(this.width - this.player.width, this.player.x + dx)
-      );
-      this.player.y = Math.max(
-        0,
-        Math.min(this.height - this.player.height, this.player.y + dy)
-      );
+      if (this.pressedKeys.has("ArrowLeft")) dx -= speed;
+      if (this.pressedKeys.has("ArrowRight")) dx += speed;
+      if (this.pressedKeys.has("ArrowUp")) dy -= speed;
+      if (this.pressedKeys.has("ArrowDown")) dy += speed;
+      if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
+        this.defenders[0].move(dx, dy);
+      }
+      return;
     }
-    // Defender (arrow keys)
-    dx = 0;
-    dy = 0;
-    if (this.pressedKeys.has("ArrowLeft")) dx -= speed;
-    if (this.pressedKeys.has("ArrowRight")) dx += speed;
-    if (this.pressedKeys.has("ArrowUp")) dy -= speed;
-    if (this.pressedKeys.has("ArrowDown")) dy += speed;
-    if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
-      this.defenders[0].move(dx, dy);
+    // Bot mode movement (WASD for blue player, only after Start)
+    if (this.currentLevel === "bot" && this.botModeStarted) {
+      const speed = 4;
+      let dx = 0,
+        dy = 0;
+      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
+      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
+      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
+      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
+      if (dx !== 0 || dy !== 0) {
+        this.player.x = Math.max(
+          0,
+          Math.min(this.width - this.player.width, this.player.x + dx)
+        );
+        this.player.y = Math.max(
+          0,
+          Math.min(this.height - this.player.height, this.player.y + dy)
+        );
+      }
+      // No defender movement in bot mode
     }
   }
 }
@@ -786,9 +691,10 @@ function startGame() {
   const levelDropdown = document.getElementById("level-dropdown");
   const selectedValue = levelDropdown.value;
   const selectedLevel = parseInt(selectedValue);
+  // After creating the game instance and setting it, initialize botModeStarted
   const game = new Game(canvas);
+  game.botModeStarted = false; // Track if bot mode has started
   window.setCurrentGame(game);
-
   game.loadLevel(selectedLevel);
 
   document.getElementById("action-buttons").style.display = "flex";
@@ -1167,6 +1073,10 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.remove();
         }
         return;
+      }
+      // After ALL validations pass and before hiding UI, enable botModeStarted for bot mode
+      if (window.currentGame && window.currentGame.currentLevel === "bot") {
+        window.currentGame.botModeStarted = true;
       }
       // Hide difficulty grid, mode buttons, input containers, and Start button
       const timedInputContainer = document.getElementById(
@@ -1771,34 +1681,38 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLevelButtons();
   };
 
-  // WASD/Arrow controls for defenders in 1v1 (level 6), only after game is started
+  // Consolidated keydown/keyup event listeners for 1v1 and bot mode
   window.addEventListener("keydown", (e) => {
     const currentGame = window.currentGame;
+    // 1v1 mode: always allow movement
     if (currentGame && currentGame.currentLevel === 6) {
       currentGame.handleDefenderControls(e);
+      e.preventDefault();
+    }
+    // Bot mode: only allow movement after Start is clicked
+    if (
+      currentGame &&
+      currentGame.currentLevel === "bot" &&
+      currentGame.botModeStarted
+    ) {
+      currentGame.pressedKeys.add(e.key);
       e.preventDefault();
     }
   });
   window.addEventListener("keyup", (e) => {
     const currentGame = window.currentGame;
+    // 1v1 mode: always allow movement
     if (currentGame && currentGame.currentLevel === 6) {
       currentGame.handleDefenderControls(e);
       e.preventDefault();
     }
-  });
-
-  // Smooth movement for 1v1 (level 6)
-  window.addEventListener("keydown", (e) => {
-    const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel === 6) {
-      currentGame.handleDefenderControls(e);
-      e.preventDefault();
-    }
-  });
-  window.addEventListener("keyup", (e) => {
-    const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel === 6) {
-      currentGame.handleDefenderControls(e);
+    // Bot mode: only allow movement after Start is clicked
+    if (
+      currentGame &&
+      currentGame.currentLevel === "bot" &&
+      currentGame.botModeStarted
+    ) {
+      currentGame.pressedKeys.delete(e.key);
       e.preventDefault();
     }
   });
