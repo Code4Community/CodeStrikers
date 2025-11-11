@@ -63,6 +63,17 @@ class Player {
       height: feetHeight,
     };
   }
+
+  inFront(defender) {
+    // Check if a defender is directly in front of the player (to the right)
+    // Returns true if the defender's x position is ahead (to the right)
+    // and within a reasonable vertical range (approximately same y level)
+    const verticalThreshold = 100; // Allow some vertical distance
+    return (
+      defender.x > this.x + this.width &&
+      Math.abs(defender.y - this.y) < verticalThreshold
+    );
+  }
   // Returns a rectangle representing the ball's bounding box
   getBox() {
     // Shrink ball box for more precise collision
@@ -417,9 +428,10 @@ class Game {
       this._goalPopupActive = false;
     }
 
-    // Draw defenders for level 2, 1v1 (level 6), and Bot mode
+    // Draw defenders for level 2, 3, 1v1 (level 6), and Bot mode
     if (
       (this.currentLevel === 2 ||
+        this.currentLevel === 3 ||
         this.currentLevel === 6 ||
         this.currentLevel === "bot") &&
       this.defenders &&
@@ -533,6 +545,18 @@ class Game {
       this.defenders.push(
         new Defender(this, this.soccerBall.x + this.soccerBall.width + 30, 250)
       );
+    } else if (level === 3) {
+      // Level 3: Three defenders spread horizontally - player must navigate around them
+      // Position ball in center of field
+      this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+      this.soccerBall.isStuck = false;
+      // Three defenders arranged horizontally: left, middle, right blocking the path
+      this.defenders.push(new Defender(this, 350, 250));   // Left defender (top)
+      this.defenders.push(new Defender(this, 150, 350));   // Left defender (top)
+      this.defenders.push(new Defender(this, 150, 150));   // Left defender (top)
+      this.defenders.push(new Defender(this, 200, 250));   // Middle defender (center)
+      this.defenders.push(new Defender(this, 350, 500));   // Right defender (bottom)
     } else if (level === 6) {
       // 1v1: main player (blue) is controlled by WASD, one defender (arrow keys)
       this.player.x = 160;
@@ -573,39 +597,95 @@ class Game {
     // Reset player and ball before running code
     this.player.reset();
 
-    // Reset soccer ball position (center of field)
-    this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
-    this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+    // Reset soccer ball position based on level
+    if (this.currentLevel === 3) {
+      // Level 3: ball is centered
+      this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+    } else {
+      // Default: center ball for other levels
+      this.soccerBall.x = (this.width - this.soccerBall.width) / 2;
+      this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
+    }
     this.soccerBall.isStuck = false;
 
     this.isExecuting = true;
 
-    // Split and clean user code lines
-    const commands = code
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    console.log("Executing commands:", commands);
+    // Create a controlled execution environment
+    const game = this;
+    const player = this.player;
+    const defenders = this.defenders;
+    let loopCount = 0;
+    const maxLoopIterations = 1000; // Prevent infinite loops
 
-    // Execute each command sequentially
-    for (const command of commands) {
-      if (shouldStop && shouldStop()) break;
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      if (shouldStop && shouldStop()) break;
+    // Define available functions in the user's scope
+    const userFunctions = {
+      moveRight: async function () {
+        await player.moveRight();
+      },
+      moveLeft: async function () {
+        await player.moveLeft();
+      },
+      moveUp: async function () {
+        await player.moveUp();
+      },
+      moveDown: async function () {
+        await player.moveDown();
+      },
+      shootBall: async function () {
+        await player.shootBall();
+      },
+      inFront: function (defenderIndex) {
+        if (
+          defenderIndex >= 0 &&
+          defenderIndex < defenders.length
+        ) {
+          return player.inFront(defenders[defenderIndex]);
+        }
+        return false;
+      },
+    };
 
-      if (command.includes("moveRight()")) {
-        await this.player.moveRight();
-      } else if (command.includes("moveLeft()")) {
-        await this.player.moveLeft();
-      } else if (command.includes("moveUp()")) {
-        await this.player.moveUp();
-      } else if (command.includes("moveDown()")) {
-        await this.player.moveDown();
-      } else if (command.includes("shootBall()")) {
-        await this.player.shootBall();
-      } else {
-        console.warn(`Unknown command: ${command}`);
-      }
+    try {
+      // Automatically insert 'await' before movement/action commands
+      let safeCode = code
+        .replace(/([^a-zA-Z0-9_])?moveRight\s*\(/g, '$1await moveRight(')
+        .replace(/([^a-zA-Z0-9_])?moveLeft\s*\(/g, '$1await moveLeft(')
+        .replace(/([^a-zA-Z0-9_])?moveUp\s*\(/g, '$1await moveUp(')
+        .replace(/([^a-zA-Z0-9_])?moveDown\s*\(/g, '$1await moveDown(')
+        .replace(/([^a-zA-Z0-9_])?shootBall\s*\(/g, '$1await shootBall(');
+
+      // Create a function from the code with access to user functions
+      const userCode = new Function(
+        "moveRight",
+        "moveLeft",
+        "moveUp",
+        "moveDown",
+        "shootBall",
+        "inFront",
+        "defenders",
+        `
+        return (async function() {
+          let originalLoopCount = 0;
+          const maxIterations = 1000;
+          ${safeCode}
+        })();
+        `
+      );
+
+      // Execute the user code
+      await userCode(
+        userFunctions.moveRight,
+        userFunctions.moveLeft,
+        userFunctions.moveUp,
+        userFunctions.moveDown,
+        userFunctions.shootBall,
+        userFunctions.inFront,
+        defenders
+      );
+    } catch (error) {
+      console.error("Error executing user code:", error);
+      alert("Error in code: " + error.message);
     }
 
     this.isExecuting = false;
