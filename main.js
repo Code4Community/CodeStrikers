@@ -376,7 +376,20 @@ class Game {
     // Collision detection: check if player's feet touch ball
     const feetBox = this.player.getFeetBox();
     const ballBox = this.soccerBall.getBox();
-    this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
+    // For level 6 (bot/1v1), make the ball stick and move with player when touched
+    if (this.currentLevel === 6) {
+      if (!this.soccerBall.isStuck && Game.rectsOverlap(feetBox, ballBox)) {
+        this.soccerBall.isStuck = true;
+      }
+      if (this.soccerBall.isStuck) {
+        this.soccerBall.stickToPlayer(this.player);
+      }
+    } else {
+      this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
+      if (this.soccerBall.isStuck) {
+        this.soccerBall.stickToPlayer(this.player);
+      }
+    }
 
     // Goal collision detection
     // Make the goal collision area even smaller so the ball must fully enter the goal
@@ -552,11 +565,11 @@ class Game {
       this.soccerBall.y = (this.height - this.soccerBall.height) / 2;
       this.soccerBall.isStuck = false;
       // Three defenders arranged horizontally: left, middle, right blocking the path
-      this.defenders.push(new Defender(this, 350, 250));   // Left defender (top)
-      this.defenders.push(new Defender(this, 150, 350));   // Left defender (top)
-      this.defenders.push(new Defender(this, 150, 150));   // Left defender (top)
-      this.defenders.push(new Defender(this, 200, 250));   // Middle defender (center)
-      this.defenders.push(new Defender(this, 350, 500));   // Right defender (bottom)
+      this.defenders.push(new Defender(this, 350, 250)); // Left defender (top)
+      this.defenders.push(new Defender(this, 150, 350)); // Left defender (top)
+      this.defenders.push(new Defender(this, 150, 150)); // Left defender (top)
+      this.defenders.push(new Defender(this, 200, 250)); // Middle defender (center)
+      this.defenders.push(new Defender(this, 350, 500)); // Right defender (bottom)
     } else if (level === 6) {
       // 1v1: main player (blue) is controlled by WASD, one defender (arrow keys)
       this.player.x = 160;
@@ -636,10 +649,7 @@ class Game {
         await player.shootBall();
       },
       inFront: function (defenderIndex) {
-        if (
-          defenderIndex >= 0 &&
-          defenderIndex < defenders.length
-        ) {
+        if (defenderIndex >= 0 && defenderIndex < defenders.length) {
           return player.inFront(defenders[defenderIndex]);
         }
         return false;
@@ -649,11 +659,11 @@ class Game {
     try {
       // Automatically insert 'await' before movement/action commands
       let safeCode = code
-        .replace(/([^a-zA-Z0-9_])?moveRight\s*\(/g, '$1await moveRight(')
-        .replace(/([^a-zA-Z0-9_])?moveLeft\s*\(/g, '$1await moveLeft(')
-        .replace(/([^a-zA-Z0-9_])?moveUp\s*\(/g, '$1await moveUp(')
-        .replace(/([^a-zA-Z0-9_])?moveDown\s*\(/g, '$1await moveDown(')
-        .replace(/([^a-zA-Z0-9_])?shootBall\s*\(/g, '$1await shootBall(');
+        .replace(/([^a-zA-Z0-9_])?moveRight\s*\(/g, "$1await moveRight(")
+        .replace(/([^a-zA-Z0-9_])?moveLeft\s*\(/g, "$1await moveLeft(")
+        .replace(/([^a-zA-Z0-9_])?moveUp\s*\(/g, "$1await moveUp(")
+        .replace(/([^a-zA-Z0-9_])?moveDown\s*\(/g, "$1await moveDown(")
+        .replace(/([^a-zA-Z0-9_])?shootBall\s*\(/g, "$1await shootBall(");
 
       // Create a function from the code with access to user functions
       const userCode = new Function(
