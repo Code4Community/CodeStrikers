@@ -373,22 +373,69 @@ class Game {
     this.fieldLeft.draw(context);
     this.fieldRight.draw(context);
 
-    // Collision detection: check if player's feet touch ball
-    const feetBox = this.player.getFeetBox();
+    // Collision detection: ball possession logic for bot/1v1 and 1v1 (level 7)
     const ballBox = this.soccerBall.getBox();
-    // For level 6 (bot/1v1), make the ball stick and move with player when touched
+    let playerFeetBox = this.player.getFeetBox();
+    let defenderFeetBox = null;
+    if (this.currentLevel === 7 && this.defenders[0]) {
+      defenderFeetBox = this.defenders[0].getFeetBox();
+    }
+    // Track who has possession
     if (this.currentLevel === 6) {
-      if (!this.soccerBall.isStuck && Game.rectsOverlap(feetBox, ballBox)) {
+      if (
+        !this.soccerBall.isStuck &&
+        Game.rectsOverlap(playerFeetBox, ballBox)
+      ) {
         this.soccerBall.isStuck = true;
       }
       if (this.soccerBall.isStuck) {
         this.soccerBall.stickToPlayer(this.player);
       }
+    } else if (this.currentLevel === 7) {
+      // 1v1: ball sticks to whoever touches it, defender can steal
+      if (!this.soccerBall._possessedBy) {
+        if (Game.rectsOverlap(playerFeetBox, ballBox)) {
+          this.soccerBall._possessedBy = "player";
+        } else if (
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "defender";
+        }
+      } else {
+        // Possession can be stolen
+        if (
+          this.soccerBall._possessedBy === "player" &&
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "defender";
+        } else if (
+          this.soccerBall._possessedBy === "defender" &&
+          Game.rectsOverlap(playerFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "player";
+        }
+      }
+      // Stick ball to whoever has possession
+      if (this.soccerBall._possessedBy === "player") {
+        this.soccerBall.isStuck = true;
+        this.soccerBall.stickToPlayer(this.player);
+      } else if (
+        this.soccerBall._possessedBy === "defender" &&
+        this.defenders[0]
+      ) {
+        this.soccerBall.isStuck = true;
+        this.soccerBall.stickToPlayer(this.defenders[0]);
+      } else {
+        this.soccerBall.isStuck = false;
+      }
     } else {
-      this.soccerBall.isStuck = Game.rectsOverlap(feetBox, ballBox);
+      this.soccerBall.isStuck = Game.rectsOverlap(playerFeetBox, ballBox);
       if (this.soccerBall.isStuck) {
         this.soccerBall.stickToPlayer(this.player);
       }
+      this.soccerBall._possessedBy = undefined;
     }
 
     // Goal collision detection
