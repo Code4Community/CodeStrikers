@@ -800,6 +800,30 @@ function startGame() {
       const text = editor.textContent;
       editor.textContent = text;
     });
+    // Handle Enter key to create new lines
+    editor.addEventListener("keydown", function (e) {
+      if (!editor.isContentEditable) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+
+        // Insert a line break
+        const textNode = document.createTextNode("\n");
+        range.deleteContents();
+        range.insertNode(textNode);
+
+        // Move cursor after the newline
+        range.setStartAfter(textNode);
+        range.collapse(true);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    });
   }
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);

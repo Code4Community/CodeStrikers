@@ -219,6 +219,92 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return pos;
     }
+    // Restore caret to original position after replacing innerHTML
+    try {
+      setCaret(editor, caretPos);
+    } catch (err) {
+      // If caret restore fails for any reason, move caret to end as fallback
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    // Update line numbers and syntax error display
+    updateLineNumbers();
+    displaySyntaxErrors(checkSyntaxErrors(plainText));
+  });
+
+  // Auto-pairing for parentheses: insert matching ')' after '(' and skip over
+  // existing ')' when user types ')'. Runs on keydown so we can preventDefault
+  // and control insertion before the browser updates the content.
+  editor.addEventListener("keydown", (e) => {
+    if (!editor.isContentEditable) return;
+
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+
+    // Helper: set caret inside editor at absolute character position
+    function setCaretAtPos(el, pos) {
+      for (let node of el.childNodes) {
+        if (node.nodeType === 3) {
+          if (node.length >= pos) {
+            const r = document.createRange();
+            const s = window.getSelection();
+            r.setStart(node, pos);
+            r.collapse(true);
+            s.removeAllRanges();
+            s.addRange(r);
+            return -1;
+          } else {
+            pos -= node.length;
+          }
+        } else {
+          pos = setCaretAtPos(node, pos);
+        }
+        if (pos === -1) return -1;
+      }
+      return pos;
+    }
+
+    // Compute caret absolute position in plain text
+    const pre = range.cloneRange();
+    pre.selectNodeContents(editor);
+    pre.setEnd(range.endContainer, range.endOffset);
+    const caretPos = pre.toString().length;
+
+    if (e.key === "(") {
+      e.preventDefault();
+      // Replace any selection with paired parentheses and place caret between
+      range.deleteContents();
+
+      const openNode = document.createTextNode("(");
+      const closeNode = document.createTextNode(")");
+
+      // Insert close then open so caret can be placed between them
+      range.insertNode(closeNode);
+      range.insertNode(openNode);
+
+      // Move caret between the two nodes
+      const newPos = caretPos + 1; // after '('
+      setCaretAtPos(editor, newPos);
+
+      // Trigger input to run highlighting and UI updates
+      editor.dispatchEvent(new Event("input"));
+      return;
+    }
+
+    if (e.key === ")") {
+      // If the next character in plain text is already ')', skip over it
+      const text = editor.innerText || "";
+      if (text.charAt(caretPos) === ")") {
+        e.preventDefault();
+        setCaretAtPos(editor, caretPos + 1);
+      }
+    }
   });
 
   // Paste handler
