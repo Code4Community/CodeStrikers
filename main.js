@@ -701,6 +701,40 @@ class Game {
           Math.min(this.height - this.player.height, this.player.y + dy)
         );
       }
+      // Space key shoot logic for WASD player
+      if (this.pressedKeys.has(" ")) {
+        // Only allow shoot if ball is stuck to player
+        if (this.soccerBall.isStuck) {
+          this.soccerBall.isStuck = false;
+          const ball = this.soccerBall;
+          const spaces = this.player.speed * 4;
+          const frames = 32;
+          let dxBall = spaces / frames;
+          let speed = dxBall * 1.2; // Medium speed
+          let twist = 0;
+          // Animate ball roll with twist
+          let frameCount = 0;
+          function animateRoll() {
+            if (frameCount < frames) {
+              ball.x += speed;
+              ball._rollingAngle =
+                (ball._rollingAngle || 0) +
+                Math.PI / 10 +
+                Math.sin(twist) * 0.08;
+              ball.x = Math.min(ball.x, ball.game.width - ball.width);
+              twist += 0.3;
+              speed *= 0.97; // Decelerate
+              frameCount++;
+              requestAnimationFrame(animateRoll);
+            } else {
+              ball._rollingAngle = 0;
+            }
+          }
+          animateRoll();
+        }
+        // Remove space key so it doesn't repeat
+        this.pressedKeys.delete(" ");
+      }
     }
   }
 }
