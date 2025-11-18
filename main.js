@@ -330,6 +330,7 @@ class Game {
     this.player.startY = this.player.y;
     this.isExecuting = false;
     this.pressedKeys = new Set();
+    this.isBallRolling = false; // Prevent repeated spacebar triggers
   }
 
   getPlayerDirection(playerType) {
@@ -361,8 +362,10 @@ class Game {
       defenderFeetBox = this.defenders[0].getFeetBox();
     }
 
-    if (this.currentLevel === 6) {
-      // Don't re-stick the ball if it's currently being shot
+    // Prevent ball from re-sticking during roll animation
+    if (this.isBallRolling) {
+      // Do nothing: ball is rolling, ignore all stick logic
+    } else if (this.currentLevel === 6) {
       if (!this.soccerBall._isShooting) {
         if (
           !this.soccerBall.isStuck &&
@@ -411,7 +414,6 @@ class Game {
         this.soccerBall.isStuck = false;
       }
     } else {
-      // Don't re-stick the ball if it's currently being shot
       if (!this.soccerBall._isShooting) {
         this.soccerBall.isStuck = Game.rectsOverlap(playerFeetBox, ballBox);
         if (this.soccerBall.isStuck) {
@@ -722,32 +724,33 @@ class Game {
         );
       }
       // Space key shoot logic for WASD player
-      if (this.pressedKeys.has(" ")) {
+      if (this.pressedKeys.has(" ") && !this.isBallRolling) {
         // Only allow shoot if ball is stuck to player
         if (this.soccerBall.isStuck) {
+          this.isBallRolling = true;
+          // Set ball position to player's feet before rolling
+          const feet = this.player.getFeetBox();
+          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
+          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
           this.soccerBall.isStuck = false;
           const ball = this.soccerBall;
           const spaces = this.player.speed * 4;
           const frames = 32;
           let dxBall = spaces / frames;
           let speed = dxBall * 1.2; // Medium speed
-          let twist = 0;
-          // Animate ball roll with twist
           let frameCount = 0;
           function animateRoll() {
             if (frameCount < frames) {
               ball.x += speed;
-              ball._rollingAngle =
-                (ball._rollingAngle || 0) +
-                Math.PI / 10 +
-                Math.sin(twist) * 0.08;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
               ball.x = Math.min(ball.x, ball.game.width - ball.width);
-              twist += 0.3;
               speed *= 0.97; // Decelerate
               frameCount++;
               requestAnimationFrame(animateRoll);
             } else {
               ball._rollingAngle = 0;
+              // Allow future rolls
+              if (ball.game) ball.game.isBallRolling = false;
             }
           }
           animateRoll();
@@ -855,7 +858,13 @@ function startGame() {
     // Helper function to highlight code
     function highlightCode(code) {
       let escaped = escapeHtml(code);
-      const functions = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+      const functions = [
+        "moveRight",
+        "moveLeft",
+        "moveUp",
+        "moveDown",
+        "shootBall",
+      ];
       functions.forEach((fn) => {
         const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
         escaped = escaped.replace(
@@ -935,7 +944,7 @@ function startGame() {
 
         // Get plain text to calculate position
         const plainText = editor.innerText || editor.textContent;
-        
+
         // Calculate caret position by walking through text nodes
         let caretPos = 0;
         const walker = document.createTreeWalker(
@@ -943,7 +952,7 @@ function startGame() {
           NodeFilter.SHOW_TEXT,
           null
         );
-        
+
         let node;
         let found = false;
         while ((node = walker.nextNode())) {
@@ -955,7 +964,7 @@ function startGame() {
             caretPos += node.textContent.length;
           }
         }
-        
+
         // If we didn't find the node, use fallback calculation
         if (!found) {
           const preCaretRange = range.cloneRange();
@@ -981,20 +990,23 @@ function startGame() {
               NodeFilter.SHOW_TEXT,
               null
             );
-            
+
             let currentPos = 0;
             let node2;
             while ((node2 = walker2.nextNode())) {
               const text = node2.textContent;
               const nodeLength = text.length;
-              
+
               // Check if the newline is in this node
-              if (currentPos <= caretPos && caretPos < currentPos + nodeLength) {
+              if (
+                currentPos <= caretPos &&
+                caretPos < currentPos + nodeLength
+              ) {
                 const localPos = caretPos - currentPos;
                 // Check if there's a newline at or before this position
                 const textBefore = text.substring(0, localPos);
-                const newlineIndex = textBefore.lastIndexOf('\n');
-                
+                const newlineIndex = textBefore.lastIndexOf("\n");
+
                 if (newlineIndex !== -1) {
                   // Position cursor after the newline
                   const range = document.createRange();
@@ -1006,10 +1018,10 @@ function startGame() {
                   return;
                 }
               }
-              
+
               currentPos += nodeLength;
             }
-            
+
             // Fallback: use setCaret function
             setCaret(editor, caretPos + 1);
           } catch (err) {
