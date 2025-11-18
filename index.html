@@ -189,24 +189,6 @@
             <span id="score-defender" class="score-value">0</span>
             <span class="score-label">Defender</span>
           </div>
-          <div
-            id="targetscore-container"
-            style="display: none; text-align: center; margin-top: 8px"
-          >
-            <span
-              id="targetscore-label"
-              style="
-                font-size: 1.1em;
-                color: #d32f2f;
-                font-weight: bold;
-                background: #ffe0e0;
-                border-radius: 8px;
-                padding: 6px 14px;
-                box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
-              "
-              >Target Score: <span id="targetscore-value">0</span></span
-            >
-          </div>
         </div>
         <div class="scoreboard-actions">
           <button
@@ -281,6 +263,10 @@
         </div>
       </div>
     </div>
+
+    <!-- Load JavaScript files in order -->
+    <script src="levels.js"></script>
     <script src="main.js"></script>
+    <script src="ui.js"></script>
   </body>
 </html>
