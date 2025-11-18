@@ -525,6 +525,34 @@ class Game {
       }
       return;
     }
+    // Do NOT show popup for bot mode
+    if (this.currentLevel === "bot") {
+      const ballBox = this.soccerBall.getBox();
+      const leftGoalBox = {
+        x: this.fieldLeft.x,
+        y: this.fieldLeft.y,
+        width: this.fieldLeft.width,
+        height: this.fieldLeft.height,
+      };
+      const rightGoalBox = {
+        x: this.fieldRight.x,
+        y: this.fieldRight.y,
+        width: this.fieldRight.width,
+        height: this.fieldRight.height,
+      };
+      if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+        this.playerScore = (this.playerScore || 0) + 1;
+        document.getElementById("score-player").textContent = this.playerScore;
+      } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+        this.defenderScore = (this.defenderScore || 0) + 1;
+        document.getElementById("score-defender").textContent =
+          this.defenderScore;
+      }
+      this.loadLevel("bot");
+      const scoreboard = document.getElementById("scoreboard");
+      if (scoreboard) scoreboard.style.display = "block";
+      return;
+    }
 
     const popup = document.createElement("div");
     popup.id = "goal-popup";
