@@ -209,6 +209,7 @@ class Player {
   async shootBall() {
     if (this.game.soccerBall.isStuck) {
       this.game.soccerBall.isStuck = false;
+      this.game.soccerBall._isShooting = true; // Prevent re-sticking during shot
       const ball = this.game.soccerBall;
       const spaces = this.speed * 4;
       const frames = 16;
@@ -220,7 +221,10 @@ class Player {
         await new Promise((r) => setTimeout(r, 20));
       }
       ball._rollingAngle = 0;
+      ball._isShooting = false; // Allow collision detection again
       console.log("Ball shot!");
+    } else {
+      console.log("Cannot shoot - ball is not stuck to player!");
     }
   }
 
@@ -358,14 +362,17 @@ class Game {
     }
 
     if (this.currentLevel === 6) {
-      if (
-        !this.soccerBall.isStuck &&
-        Game.rectsOverlap(playerFeetBox, ballBox)
-      ) {
-        this.soccerBall.isStuck = true;
-      }
-      if (this.soccerBall.isStuck) {
-        this.soccerBall.stickToPlayer(this.player);
+      // Don't re-stick the ball if it's currently being shot
+      if (!this.soccerBall._isShooting) {
+        if (
+          !this.soccerBall.isStuck &&
+          Game.rectsOverlap(playerFeetBox, ballBox)
+        ) {
+          this.soccerBall.isStuck = true;
+        }
+        if (this.soccerBall.isStuck) {
+          this.soccerBall.stickToPlayer(this.player);
+        }
       }
     } else if (this.currentLevel === 7) {
       if (!this.soccerBall._possessedBy) {
@@ -404,9 +411,12 @@ class Game {
         this.soccerBall.isStuck = false;
       }
     } else {
-      this.soccerBall.isStuck = Game.rectsOverlap(playerFeetBox, ballBox);
-      if (this.soccerBall.isStuck) {
-        this.soccerBall.stickToPlayer(this.player);
+      // Don't re-stick the ball if it's currently being shot
+      if (!this.soccerBall._isShooting) {
+        this.soccerBall.isStuck = Game.rectsOverlap(playerFeetBox, ballBox);
+        if (this.soccerBall.isStuck) {
+          this.soccerBall.stickToPlayer(this.player);
+        }
       }
       this.soccerBall._possessedBy = undefined;
     }
@@ -580,18 +590,28 @@ class Game {
     const userFunctions = {
       moveRight: async function () {
         await player.moveRight();
+        // Add pause after movement
+        await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveLeft: async function () {
         await player.moveLeft();
+        // Add pause after movement
+        await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveUp: async function () {
         await player.moveUp();
+        // Add pause after movement
+        await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveDown: async function () {
         await player.moveDown();
+        // Add pause after movement
+        await new Promise((resolve) => setTimeout(resolve, 300));
       },
       shootBall: async function () {
         await player.shootBall();
+        // Add pause after shooting
+        await new Promise((resolve) => setTimeout(resolve, 300));
       },
       inFront: function (defenderIndex) {
         if (defenderIndex >= 0 && defenderIndex < defenders.length) {
@@ -782,24 +802,92 @@ function startGame() {
     if (clearBtn) clearBtn.style.display = "inline-block";
   }
 
-  // Fix backwards typing: only apply syntax highlighting on blur
+  // Real-time syntax highlighting with color preservation
   if (editor) {
-    // Remove input event handler that sets innerHTML
-    // Instead, apply syntax highlighting only on blur
-    editor.addEventListener("blur", function () {
-      const code = editor.textContent;
-      let html = code.replace(
-        /(moveRight|moveLeft|moveUp|moveDown|shootBall)/g,
-        '<span class="highlight">$1</span>'
-      );
-      editor.innerHTML = html;
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return text.replace(/[&<>"']/g, function (m) {
+        return map[m];
+      });
+    }
+
+    // Helper function to highlight code
+    function highlightCode(code) {
+      let escaped = escapeHtml(code);
+      const functions = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+      functions.forEach((fn) => {
+        const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
+        escaped = escaped.replace(
+          fnRegex,
+          `<span class="token-function">$1</span>`
+        );
+      });
+      escaped = escaped.replace(/\(/g, `<span class="token-parens">(</span>`);
+      escaped = escaped.replace(/\)/g, `<span class="token-parens">)</span>`);
+      return escaped;
+    }
+
+    // Helper function to restore caret position
+    function setCaret(el, pos) {
+      for (let node of el.childNodes) {
+        if (node.nodeType === 3) {
+          if (node.length >= pos) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(node, pos);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            return -1;
+          } else {
+            pos -= node.length;
+          }
+        } else {
+          pos = setCaret(node, pos);
+          if (pos === -1) {
+            return -1;
+          }
+        }
+      }
+      return pos;
+    }
+
+    // Real-time syntax highlighting on input
+    editor.addEventListener("input", function (e) {
+      if (!editor.isContentEditable) return;
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editor);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      const caretPos = preCaretRange.toString().length;
+
+      const plainText = editor.innerText;
+      editor.innerHTML = highlightCode(plainText);
+
+      // Restore caret position
+      try {
+        setCaret(editor, caretPos);
+      } catch (err) {
+        // Fallback: move caret to end
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     });
-    // On focus, restore plain text for editing
-    editor.addEventListener("focus", function () {
-      // Remove all HTML tags, keep only text
-      const text = editor.textContent;
-      editor.textContent = text;
-    });
+
     // Handle Enter key to create new lines
     editor.addEventListener("keydown", function (e) {
       if (!editor.isContentEditable) return;
@@ -811,17 +899,95 @@ function startGame() {
         if (!selection.rangeCount) return;
         const range = selection.getRangeAt(0);
 
-        // Insert a line break
-        const textNode = document.createTextNode("\n");
-        range.deleteContents();
-        range.insertNode(textNode);
+        // Get plain text to calculate position
+        const plainText = editor.innerText || editor.textContent;
+        
+        // Calculate caret position by walking through text nodes
+        let caretPos = 0;
+        const walker = document.createTreeWalker(
+          editor,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
+        
+        let node;
+        let found = false;
+        while ((node = walker.nextNode())) {
+          if (node === range.startContainer) {
+            caretPos += range.startOffset;
+            found = true;
+            break;
+          } else {
+            caretPos += node.textContent.length;
+          }
+        }
+        
+        // If we didn't find the node, use fallback calculation
+        if (!found) {
+          const preCaretRange = range.cloneRange();
+          preCaretRange.selectNodeContents(editor);
+          preCaretRange.setEnd(range.endContainer, range.endOffset);
+          caretPos = preCaretRange.toString().length;
+        }
 
-        // Move cursor after the newline
-        range.setStartAfter(textNode);
-        range.collapse(true);
+        // Insert newline in plain text
+        const beforeCursor = plainText.substring(0, caretPos);
+        const afterCursor = plainText.substring(caretPos);
+        const newText = beforeCursor + "\n" + afterCursor;
 
-        selection.removeAllRanges();
-        selection.addRange(range);
+        // Update with highlighted code
+        editor.innerHTML = highlightCode(newText);
+
+        // Restore caret position after newline
+        requestAnimationFrame(() => {
+          try {
+            // Find the text node containing the newline at caretPos
+            const walker2 = document.createTreeWalker(
+              editor,
+              NodeFilter.SHOW_TEXT,
+              null
+            );
+            
+            let currentPos = 0;
+            let node2;
+            while ((node2 = walker2.nextNode())) {
+              const text = node2.textContent;
+              const nodeLength = text.length;
+              
+              // Check if the newline is in this node
+              if (currentPos <= caretPos && caretPos < currentPos + nodeLength) {
+                const localPos = caretPos - currentPos;
+                // Check if there's a newline at or before this position
+                const textBefore = text.substring(0, localPos);
+                const newlineIndex = textBefore.lastIndexOf('\n');
+                
+                if (newlineIndex !== -1) {
+                  // Position cursor after the newline
+                  const range = document.createRange();
+                  const sel = window.getSelection();
+                  range.setStart(node2, newlineIndex + 1);
+                  range.collapse(true);
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                  return;
+                }
+              }
+              
+              currentPos += nodeLength;
+            }
+            
+            // Fallback: use setCaret function
+            setCaret(editor, caretPos + 1);
+          } catch (err) {
+            // Final fallback: move caret to end
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        });
       }
     });
   }
