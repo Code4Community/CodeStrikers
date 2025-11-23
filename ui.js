@@ -165,14 +165,11 @@ function updateLevelButtons() {
   const currentGame = window.currentGame;
 
   if (currentGame) {
-    backBtn.disabled = currentGame.currentLevel === 1;
-    const dropdown = document.getElementById("level-dropdown");
-    const selectedValue = dropdown.value;
-    if (selectedValue === "6" || selectedValue === "bot") {
-      nextBtn.disabled = true;
-    } else {
-      nextBtn.disabled = false;
-    }
+    const level = currentGame.currentLevel;
+    // Disable back button on level 1
+    backBtn.disabled = level === 1;
+    // Disable next button only on 1v1 mode (the last level)
+    nextBtn.disabled = level === 6;
   }
 }
 
@@ -393,10 +390,22 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("next-level-btn").addEventListener("click", () => {
     showAllGameButtons();
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel < 5) {
-      currentGame.loadLevel(currentGame.currentLevel + 1);
-      document.getElementById("level-dropdown").value =
-        currentGame.currentLevel;
+    if (!currentGame) return;
+
+    let nextLevel;
+    if (typeof currentGame.currentLevel === "number") {
+      if (currentGame.currentLevel < 5) {
+        nextLevel = currentGame.currentLevel + 1;
+      } else if (currentGame.currentLevel === 5) {
+        nextLevel = "bot";
+      }
+    } else if (currentGame.currentLevel === "bot") {
+      nextLevel = 6;
+    }
+
+    if (nextLevel !== undefined) {
+      currentGame.loadLevel(nextLevel);
+      document.getElementById("level-dropdown").value = nextLevel;
       currentGame.player.reset();
       if (currentGame.soccerBall) {
         currentGame._goalPopupShown = false;
@@ -407,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      updateUIForLevel(currentGame.currentLevel);
+      updateUIForLevel(nextLevel);
       updateLevelButtons();
     }
   });
@@ -415,10 +424,23 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("back-level-btn").addEventListener("click", () => {
     showAllGameButtons();
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel > 1) {
-      currentGame.loadLevel(currentGame.currentLevel - 1);
-      document.getElementById("level-dropdown").value =
-        currentGame.currentLevel;
+    if (!currentGame) return;
+
+    let prevLevel;
+    if (currentGame.currentLevel === 6) {
+      prevLevel = "bot";
+    } else if (currentGame.currentLevel === "bot") {
+      prevLevel = 5;
+    } else if (
+      typeof currentGame.currentLevel === "number" &&
+      currentGame.currentLevel > 1
+    ) {
+      prevLevel = currentGame.currentLevel - 1;
+    }
+
+    if (prevLevel !== undefined) {
+      currentGame.loadLevel(prevLevel);
+      document.getElementById("level-dropdown").value = prevLevel;
       currentGame.player.reset();
       if (currentGame.soccerBall) {
         currentGame._goalPopupShown = false;
@@ -429,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      updateUIForLevel(currentGame.currentLevel);
+      updateUIForLevel(prevLevel);
       updateLevelButtons();
     }
   });
