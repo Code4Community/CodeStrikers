@@ -358,13 +358,18 @@ class Game {
     const ballBox = this.soccerBall.getBox();
     let playerFeetBox = this.player.getFeetBox();
     let defenderFeetBox = null;
-    if (this.currentLevel === 7 && this.defenders[0]) {
+    if (
+      (this.currentLevel === 7 || this.currentLevel === "bot") &&
+      this.defenders[0]
+    ) {
       defenderFeetBox = this.defenders[0].getFeetBox();
     }
 
     // Prevent ball from re-sticking during roll animation
     if (this.isBallRolling) {
       // Do nothing: ball is rolling, ignore all stick logic
+    } else if (this._botShooting) {
+      // Do nothing: bot is shooting, ignore all stick logic
     } else if (this.currentLevel === 6) {
       if (!this.soccerBall._isShooting) {
         if (
@@ -377,7 +382,7 @@ class Game {
           this.soccerBall.stickToPlayer(this.player);
         }
       }
-    } else if (this.currentLevel === 7) {
+    } else if (this.currentLevel === 7 || this.currentLevel === "bot") {
       if (!this.soccerBall._possessedBy) {
         if (Game.rectsOverlap(playerFeetBox, ballBox)) {
           this.soccerBall._possessedBy = "player";
@@ -527,6 +532,15 @@ class Game {
     }
     // Do NOT show popup for bot mode
     if (this.currentLevel === "bot") {
+      // Stop any ongoing ball rolling animation
+      this._stopBallAnimation = true;
+      this.isBallRolling = false;
+      this.soccerBall._rollingAngle = 0;
+
+      // Unstick the ball and reset possession
+      this.soccerBall.isStuck = false;
+      this.soccerBall._possessedBy = undefined;
+
       const ballBox = this.soccerBall.getBox();
       const leftGoalBox = {
         x: this.fieldLeft.x,
@@ -703,82 +717,6 @@ class Game {
     }
   }
 
-  updateBotAI() {
-    if (!this.defenders[0]) return;
-
-    const bot = this.defenders[0];
-    const ball = this.soccerBall;
-    const botSpeed = 2; // Slower than player for easy mode
-
-    // Calculate center points for more accurate movement
-    const botCenterX = bot.x + bot.width / 2;
-    const botCenterY = bot.y + bot.height / 2;
-    const ballCenterX = ball.x + ball.width / 2;
-    const ballCenterY = ball.y + ball.height / 2;
-
-    // Calculate direction to ball
-    const dx = ballCenterX - botCenterX;
-    const dy = ballCenterY - botCenterY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // If ball is possessed by bot, move towards goal
-    if (this.soccerBall._possessedBy === "defender") {
-      // Move towards left goal (opposite side)
-      const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
-      const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
-
-      const goalDx = goalCenterX - botCenterX;
-      const goalDy = goalCenterY - botCenterY;
-      const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
-
-      // Normalize and move
-      if (goalDistance > 10) {
-        const moveX = (goalDx / goalDistance) * botSpeed;
-        const moveY = (goalDy / goalDistance) * botSpeed;
-        bot.move(moveX, moveY);
-      }
-
-      // Shoot when close to goal
-      if (goalDistance < 150) {
-        // Shoot logic similar to player
-        if (!this._botShooting) {
-          this._botShooting = true;
-          this.soccerBall.isStuck = false;
-          this.soccerBall._possessedBy = undefined;
-
-          const shootBall = this.soccerBall;
-          const spaces = 220; // Distance to shoot
-          const frames = 32;
-          let shootSpeed = spaces / frames;
-          let frameCount = 0;
-
-          const shootAnimation = () => {
-            if (frameCount < frames) {
-              shootBall.x -= shootSpeed; // Shoot left towards goal
-              shootBall._rollingAngle =
-                (shootBall._rollingAngle || 0) + Math.PI / 10;
-              shootBall.x = Math.max(0, shootBall.x);
-              shootSpeed *= 0.97;
-              frameCount++;
-              requestAnimationFrame(shootAnimation);
-            } else {
-              shootBall._rollingAngle = 0;
-              this._botShooting = false;
-            }
-          };
-          shootAnimation();
-        }
-      }
-    } else {
-      // Move towards ball
-      if (distance > 5) {
-        const moveX = (dx / distance) * botSpeed;
-        const moveY = (dy / distance) * botSpeed;
-        bot.move(moveX, moveY);
-      }
-    }
-  }
-
   updateSmoothMovement() {
     if (this.currentLevel === 6) {
       const speed = 4;
@@ -829,22 +767,28 @@ class Game {
       }
       // Space key shoot logic for WASD player
       if (this.pressedKeys.has(" ") && !this.isBallRolling) {
-        // Only allow shoot if ball is stuck to player
-        if (this.soccerBall.isStuck) {
+        // Only allow shoot if ball is stuck to player AND player has possession
+        if (
+          this.soccerBall.isStuck &&
+          this.soccerBall._possessedBy === "player"
+        ) {
           this.isBallRolling = true;
           // Set ball position to player's feet before rolling
           const feet = this.player.getFeetBox();
           this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
           this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
           this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
           const ball = this.soccerBall;
           const spaces = this.player.speed * 4;
           const frames = 32;
           let dxBall = spaces / frames;
           let speed = dxBall * 1.2; // Medium speed
           let frameCount = 0;
+          const game = this;
           function animateRoll() {
-            if (frameCount < frames) {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
               ball.x += speed;
               ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
               ball.x = Math.min(ball.x, ball.game.width - ball.width);
@@ -854,7 +798,10 @@ class Game {
             } else {
               ball._rollingAngle = 0;
               // Allow future rolls
-              if (ball.game) ball.game.isBallRolling = false;
+              if (ball.game) {
+                ball.game.isBallRolling = false;
+                ball.game._stopBallAnimation = false;
+              }
             }
           }
           animateRoll();
@@ -869,35 +816,35 @@ class Game {
   }
 
   updateBotAI() {
-    if (!this.defenders[0]) return;
+    // Only run bot AI if bot mode has been started
+    if (!this.defenders[0] || !this.botModeStarted) return;
 
     const bot = this.defenders[0];
     const ball = this.soccerBall;
-    const botSpeed = 2.5; // Slightly increased speed
+    const botSpeed = 2.5; // Easy mode speed
 
-    // Calculate center points for more accurate movement
-    const botCenterX = bot.x + bot.width / 2;
-    const botCenterY = bot.y + bot.height / 2;
+    // Get bot's feet position for accurate collision
+    const botFeet = bot.getFeetBox();
+    const botFeetCenterX = botFeet.x + botFeet.width / 2;
+    const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
     const ballCenterX = ball.x + ball.width / 2;
     const ballCenterY = ball.y + ball.height / 2;
 
-    // Calculate direction to ball
-    const dx = ballCenterX - botCenterX;
-    const dy = ballCenterY - botCenterY;
+    // Calculate direction from bot's feet to ball
+    const dx = ballCenterX - botFeetCenterX;
+    const dy = ballCenterY - botFeetCenterY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // If ball is possessed by bot, move towards goal
     if (this.soccerBall._possessedBy === "defender") {
-      console.log("Bot has the ball! Moving to goal...");
       // Move towards left goal (opposite side)
       const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
       const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
 
-      const goalDx = goalCenterX - botCenterX;
-      const goalDy = goalCenterY - botCenterY;
+      const goalDx = goalCenterX - botFeetCenterX;
+      const goalDy = goalCenterY - botFeetCenterY;
       const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
-
-      console.log(`Distance to goal: ${goalDistance}`);
 
       // Normalize and move
       if (goalDistance > 10) {
@@ -907,8 +854,7 @@ class Game {
       }
 
       // Shoot when close to goal
-      if (goalDistance < 200) {
-        console.log("Bot is shooting!");
+      if (goalDistance < 120) {
         // Shoot logic similar to player
         if (!this._botShooting) {
           this._botShooting = true;
@@ -921,8 +867,10 @@ class Game {
           let shootSpeed = spaces / frames;
           let frameCount = 0;
 
+          const game = this;
           const shootAnimation = () => {
-            if (frameCount < frames) {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
               shootBall.x -= shootSpeed; // Shoot left towards goal
               shootBall._rollingAngle =
                 (shootBall._rollingAngle || 0) + Math.PI / 10;
@@ -932,198 +880,23 @@ class Game {
               requestAnimationFrame(shootAnimation);
             } else {
               shootBall._rollingAngle = 0;
-              if (shootBall.game) shootBall.game._botShooting = false;
+              if (shootBall.game) {
+                shootBall.game._botShooting = false;
+                shootBall.game._stopBallAnimation = false;
+              }
             }
           };
           shootAnimation();
         }
       }
     } else {
-      // Move towards ball
-      console.log(`Bot chasing ball. Distance: ${distance}`);
-      if (distance > 3) {
+      // Move bot's feet towards the ball
+      if (distance > 5) {
         const moveX = (dx / distance) * botSpeed;
         const moveY = (dy / distance) * botSpeed;
         bot.move(moveX, moveY);
       }
     }
-  }
-
-  updateSmoothMovement() {
-    if (this.currentLevel === 6) {
-      const speed = 4;
-      let dx = 0,
-        dy = 0;
-      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
-      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
-      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
-      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
-      if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
-          0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
-        );
-        this.player.y = Math.max(
-          0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
-        );
-      }
-      dx = 0;
-      dy = 0;
-      if (this.pressedKeys.has("ArrowLeft")) dx -= speed;
-      if (this.pressedKeys.has("ArrowRight")) dx += speed;
-      if (this.pressedKeys.has("ArrowUp")) dy -= speed;
-      if (this.pressedKeys.has("ArrowDown")) dy += speed;
-      if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
-        this.defenders[0].move(dx, dy);
-      }
-      return;
-    }
-    if (this.currentLevel === "bot" && this.botModeStarted) {
-      const speed = 4;
-      let dx = 0,
-        dy = 0;
-      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
-      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
-      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
-      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
-      if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
-          0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
-        );
-        this.player.y = Math.max(
-          0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
-        );
-      }
-      // Space key shoot logic for WASD player
-      if (this.pressedKeys.has(" ") && !this.isBallRolling) {
-        // Only allow shoot if ball is stuck to player
-        if (this.soccerBall.isStuck) {
-          this.isBallRolling = true;
-          // Set ball position to player's feet before rolling
-          const feet = this.player.getFeetBox();
-          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
-          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
-          this.soccerBall.isStuck = false;
-          const ball = this.soccerBall;
-          const spaces = this.player.speed * 4;
-          const frames = 32;
-          let dxBall = spaces / frames;
-          let speed = dxBall * 1.2; // Medium speed
-          let frameCount = 0;
-          function animateRoll() {
-            if (frameCount < frames) {
-              ball.x += speed;
-              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
-              ball.x = Math.min(ball.x, ball.game.width - ball.width);
-              speed *= 0.97; // Decelerate
-              frameCount++;
-              requestAnimationFrame(animateRoll);
-            } else {
-              ball._rollingAngle = 0;
-              // Allow future rolls
-              if (ball.game) ball.game.isBallRolling = false;
-            }
-          }
-          animateRoll();
-        }
-        // Remove space key so it doesn't repeat
-        this.pressedKeys.delete(" ");
-      }
-
-      // Update bot AI
-      this.updateBotAI();
-    }
-  }
-
-  updateSmoothMovement() {
-    if (this.currentLevel === 6) {
-      const speed = 4;
-      let dx = 0,
-        dy = 0;
-      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
-      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
-      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
-      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
-      if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
-          0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
-        );
-        this.player.y = Math.max(
-          0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
-        );
-      }
-      dx = 0;
-      dy = 0;
-      if (this.pressedKeys.has("ArrowLeft")) dx -= speed;
-      if (this.pressedKeys.has("ArrowRight")) dx += speed;
-      if (this.pressedKeys.has("ArrowUp")) dy -= speed;
-      if (this.pressedKeys.has("ArrowDown")) dy += speed;
-      if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
-        this.defenders[0].move(dx, dy);
-      }
-      return;
-    }
-    if (this.currentLevel === "bot" && this.botModeStarted) {
-      const speed = 4;
-      let dx = 0,
-        dy = 0;
-      if (this.pressedKeys.has("a") || this.pressedKeys.has("A")) dx -= speed;
-      if (this.pressedKeys.has("d") || this.pressedKeys.has("D")) dx += speed;
-      if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
-      if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
-      if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
-          0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
-        );
-        this.player.y = Math.max(
-          0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
-        );
-      }
-      // Space key shoot logic for WASD player
-      if (this.pressedKeys.has(" ") && !this.isBallRolling) {
-        // Only allow shoot if ball is stuck to player
-        if (this.soccerBall.isStuck) {
-          this.isBallRolling = true;
-          // Set ball position to player's feet before rolling
-          const feet = this.player.getFeetBox();
-          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
-          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
-          this.soccerBall.isStuck = false;
-          const ball = this.soccerBall;
-          const spaces = this.player.speed * 4;
-          const frames = 32;
-          let dxBall = spaces / frames;
-          let speed = dxBall * 1.2; // Medium speed
-          let frameCount = 0;
-          function animateRoll() {
-            if (frameCount < frames) {
-              ball.x += speed;
-              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
-              ball.x = Math.min(ball.x, ball.game.width - ball.width);
-              speed *= 0.97; // Decelerate
-              frameCount++;
-              requestAnimationFrame(animateRoll);
-            } else {
-              ball._rollingAngle = 0;
-              // Allow future rolls
-              if (ball.game) ball.game.isBallRolling = false;
-            }
-          }
-          animateRoll();
-        }
-        // Remove space key so it doesn't repeat
-        this.pressedKeys.delete(" ");
-      }
-    }
-    // Update bot AI
-    this.updateBotAI();
   }
 }
 
