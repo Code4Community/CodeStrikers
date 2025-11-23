@@ -590,6 +590,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       hideStartUI();
+
+      // Store the mode button globally for play again functionality
+      window._currentModeBtn = modeSelectedBtn;
+
       setupGameMode(modeSelectedBtn);
     });
   }
@@ -740,7 +744,73 @@ function hideStartUI() {
   }
 }
 
+function showStartUI() {
+  const difficultyGrid = document.querySelector(".difficulty-grid");
+  const modeButtons = document.querySelector(".mode-buttons");
+  const timedInputContainer = document.getElementById("timed-input-container");
+  const toscoreInputContainer = document.getElementById(
+    "toscore-input-container"
+  );
+  const freeplayMessage = document.getElementById("freeplay-message");
+  const startBtn = document.querySelector(".start-btn");
+
+  if (difficultyGrid) difficultyGrid.style.display = "grid";
+  if (modeButtons) modeButtons.style.display = "flex";
+  if (timedInputContainer) timedInputContainer.style.display = "none";
+  if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
+  if (freeplayMessage) freeplayMessage.style.display = "none";
+  if (startBtn) startBtn.style.display = "block";
+
+  if (
+    difficultyGrid &&
+    difficultyGrid.previousElementSibling &&
+    difficultyGrid.previousElementSibling.textContent.includes(
+      "Select Difficulty"
+    )
+  ) {
+    difficultyGrid.previousElementSibling.style.display = "block";
+  }
+  if (
+    modeButtons &&
+    modeButtons.previousElementSibling &&
+    modeButtons.previousElementSibling.textContent.includes("Select Game Mode")
+  ) {
+    modeButtons.previousElementSibling.style.display = "block";
+  }
+
+  // Unselect all difficulty buttons
+  if (difficultyGrid) {
+    const difficultyBtns = difficultyGrid.querySelectorAll(".difficulty-btn");
+    difficultyBtns.forEach((btn) => {
+      btn.classList.remove("selected");
+      btn.disabled = false;
+    });
+  }
+
+  // Unselect all mode buttons
+  if (modeButtons) {
+    const modeBtns = modeButtons.querySelectorAll(".difficulty-btn");
+    modeBtns.forEach((btn) => {
+      btn.classList.remove("selected");
+      btn.disabled = false;
+    });
+  }
+
+  // Clear input fields
+  const timedInput = document.getElementById("timed-minutes");
+  const scoreInput = document.getElementById("toscore-score");
+  if (timedInput) timedInput.value = "";
+  if (scoreInput) scoreInput.value = "";
+
+  // Hide scoreboard
+  const scoreboard = document.getElementById("scoreboard");
+  if (scoreboard) scoreboard.style.display = "none";
+}
+
 function setupGameMode(modeSelectedBtn) {
+  // Store globally for restart functionality
+  window._currentModeBtn = modeSelectedBtn;
+
   const scoreboard = document.getElementById("scoreboard");
   const scorePlayer = document.getElementById("score-player");
   const scoreDefender = document.getElementById("score-defender");
@@ -822,3 +892,7 @@ function setupGameMode(modeSelectedBtn) {
     timerContainer.style.display = "none";
   }
 }
+
+// Make setupGameMode and showStartUI accessible globally
+window.setupGameMode = setupGameMode;
+window.showStartUI = showStartUI;

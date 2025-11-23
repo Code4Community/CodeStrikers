@@ -493,6 +493,110 @@ class Game {
     this.player.update();
   }
 
+  showGameOverPopup(winner) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag to stop bot movement
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._timerInterval) {
+      clearInterval(window._timerInterval);
+    }
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">${
+          winner === "player" ? "You Win!" : "Bot Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn;
+      if (modeSelectedBtn && window.setupGameMode) {
+        window.setupGameMode(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.botModeStarted = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._timerInterval) {
+        clearInterval(window._timerInterval);
+        window._timerInterval = null;
+      }
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+
+      // Show start UI again
+      if (window.showStartUI) {
+        window.showStartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+  }
+
   showGoalPopup() {
     if (document.getElementById("goal-popup")) return;
     if (this.currentLevel === 6) {
@@ -541,6 +645,9 @@ class Game {
       this.soccerBall.isStuck = false;
       this.soccerBall._possessedBy = undefined;
 
+      // Reset defensive pass counter for impossible mode
+      this._defensivePassCount = 0;
+
       const ballBox = this.soccerBall.getBox();
       const leftGoalBox = {
         x: this.fieldLeft.x,
@@ -557,11 +664,33 @@ class Game {
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
         this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
+
+        // Check if player won by reaching target score
+        if (window._targetScore && this.playerScore >= window._targetScore) {
+          this.showGameOverPopup("player");
+          return;
+        }
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
         this.defenderScore = (this.defenderScore || 0) + 1;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
+
+        // Check if bot won by reaching target score
+        if (window._targetScore && this.defenderScore >= window._targetScore) {
+          this.showGameOverPopup("bot");
+          return;
+        }
       }
+
+      // Check if timer reached 0 in timed mode
+      const timerValue = document.getElementById("timer-value");
+      if (timerValue && timerValue.textContent === "0:00") {
+        // Determine winner by score
+        const winner = this.playerScore > this.defenderScore ? "player" : "bot";
+        this.showGameOverPopup(winner);
+        return;
+      }
+
       this.loadLevel("bot");
       const scoreboard = document.getElementById("scoreboard");
       if (scoreboard) scoreboard.style.display = "block";
@@ -748,6 +877,25 @@ class Game {
       return;
     }
     if (this.currentLevel === "bot" && this.botModeStarted) {
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used)
+      const timerContainer = document.getElementById("timer-container");
+      const timerValue = document.getElementById("timer-value");
+      if (
+        timerContainer &&
+        timerContainer.style.display !== "none" &&
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !document.getElementById("game-over-popup")
+      ) {
+        // Determine winner by score
+        const winner =
+          (this.playerScore || 0) > (this.defenderScore || 0)
+            ? "player"
+            : "bot";
+        this.showGameOverPopup(winner);
+        return;
+      }
+
       const speed = 4;
       let dx = 0,
         dy = 0;
@@ -816,8 +964,8 @@ class Game {
   }
 
   updateBotAI() {
-    // Only run bot AI if bot mode has been started
-    if (!this.defenders[0] || !this.botModeStarted) return;
+    // Only run bot AI if bot mode has been started and game is not over
+    if (!this.defenders[0] || !this.botModeStarted || this.isGameOver) return;
 
     const bot = this.defenders[0];
     const ball = this.soccerBall;
@@ -825,7 +973,10 @@ class Game {
 
     // Difficulty settings
     let botSpeed, shootDistance;
-    if (difficulty === "hard") {
+    if (difficulty === "impossible") {
+      botSpeed = 3.5;
+      shootDistance = 200;
+    } else if (difficulty === "hard") {
       botSpeed = 3.5;
       shootDistance = 180;
     } else if (difficulty === "medium") {
@@ -852,6 +1003,63 @@ class Game {
 
     // If ball is possessed by bot, move towards goal
     if (this.soccerBall._possessedBy === "defender") {
+      const playerCenterX = this.player.x + this.player.width / 2;
+      const playerCenterY = this.player.y + this.player.height / 2;
+      const playerDx = playerCenterX - botFeetCenterX;
+      const playerDy = playerCenterY - botFeetCenterY;
+      const playerDistance = Math.sqrt(
+        playerDx * playerDx + playerDy * playerDy
+      );
+
+      // Impossible difficulty: Defensive pass if player gets too close
+      if (
+        difficulty === "impossible" &&
+        playerDistance < 100 &&
+        !this._botShooting
+      ) {
+        // Initialize defensive pass counter
+        if (typeof this._defensivePassCount === "undefined") {
+          this._defensivePassCount = 0;
+        }
+
+        // Limit to 2 defensive passes per round
+        if (this._defensivePassCount < 2) {
+          this._defensivePassCount++;
+
+          // Bot clears the ball away from player to regain control
+          this._botShooting = true;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          const shootBall = this.soccerBall;
+          const spaces = 180; // Short distance pass
+          const frames = 24;
+          let shootSpeed = spaces / frames;
+          let frameCount = 0;
+
+          const game = this;
+          const shootAnimation = () => {
+            if (frameCount < frames && !game._stopBallAnimation) {
+              shootBall.x -= shootSpeed;
+              shootBall._rollingAngle =
+                (shootBall._rollingAngle || 0) + Math.PI / 10;
+              shootBall.x = Math.max(0, shootBall.x);
+              shootSpeed *= 0.97;
+              frameCount++;
+              requestAnimationFrame(shootAnimation);
+            } else {
+              shootBall._rollingAngle = 0;
+              if (shootBall.game) {
+                shootBall.game._botShooting = false;
+                shootBall.game._stopBallAnimation = false;
+              }
+            }
+          };
+          shootAnimation();
+          return; // Exit early after defensive pass
+        }
+      }
+
       // Move towards left goal (opposite side)
       const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
       const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
@@ -860,18 +1068,73 @@ class Game {
       let goalDy = goalCenterY - botFeetCenterY;
       const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
 
+      // Impossible difficulty: Advanced feints and jukes
+      if (difficulty === "impossible") {
+        // Initialize feint timer if not exists
+        if (!this._feintTimer) this._feintTimer = 0;
+        this._feintTimer++;
+
+        if (playerDistance < 180) {
+          // Ultra unpredictable movement with random elements
+          const time = this._feintTimer;
+          const random = Math.sin(time * 0.3) * Math.cos(time * 0.7);
+
+          // Multi-layered unpredictable pattern
+          const fastCycle = time % 8; // Very fast changes
+          const medCycle = Math.floor(time / 10) % 5;
+          const randomFactor = Math.random();
+
+          // Extremely erratic dodging
+          if (fastCycle < 2) {
+            // Rapid zigzag up
+            goalDy -= 250;
+            goalDx += 30 * random; // Add horizontal juke
+          } else if (fastCycle < 4) {
+            // Rapid zigzag down
+            goalDy += 250;
+            goalDx -= 30 * random; // Reverse horizontal juke
+          } else if (fastCycle < 6) {
+            // Fake movement based on random
+            if (randomFactor > 0.5) {
+              goalDy -= 220;
+              goalDx += 40;
+            } else {
+              goalDy += 220;
+              goalDx -= 40;
+            }
+          } else {
+            // Unpredictable diagonal movements
+            if (medCycle === 0) {
+              goalDy -= 230;
+              goalDx -= 50;
+            } else if (medCycle === 1) {
+              goalDy += 230;
+              goalDx += 50;
+            } else if (medCycle === 2) {
+              // Sudden reverse
+              goalDy += 200;
+              goalDx -= 60;
+            } else if (medCycle === 3) {
+              // Wave pattern
+              goalDy += Math.sin(time * 0.5) * 250;
+              goalDx += Math.cos(time * 0.3) * 40;
+            } else {
+              // Chaos mode
+              goalDy += (randomFactor - 0.5) * 350;
+              goalDx += (Math.random() - 0.5) * 80;
+            }
+          }
+
+          // Add even more chaos when very close
+          if (playerDistance < 100) {
+            goalDy += Math.sin(time * 1.2) * 150;
+            goalDx += Math.cos(time * 1.5) * 60;
+          }
+        }
+      }
+
       // Hard difficulty: dodge player when moving to goal
       if (difficulty === "hard") {
-        const playerCenterX = this.player.x + this.player.width / 2;
-        const playerCenterY = this.player.y + this.player.height / 2;
-
-        // Check if player is in the way
-        const playerDx = playerCenterX - botFeetCenterX;
-        const playerDy = playerCenterY - botFeetCenterY;
-        const playerDistance = Math.sqrt(
-          playerDx * playerDx + playerDy * playerDy
-        );
-
         // If player is close (within 120 pixels), dodge them
         if (playerDistance < 120) {
           // Dodge perpendicular to the direction toward player
@@ -886,11 +1149,16 @@ class Game {
         }
       }
 
-      // Normalize and move
+      // Normalize and move (boost speed during dodge in hard mode)
       const moveDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
       if (moveDistance > 10) {
-        const moveX = (goalDx / moveDistance) * botSpeed;
-        const moveY = (goalDy / moveDistance) * botSpeed;
+        // Speed boost during dodge for hard mode
+        const dodgeSpeed =
+          difficulty === "hard" && playerDistance < 120
+            ? botSpeed * 1.3
+            : botSpeed;
+        const moveX = (goalDx / moveDistance) * dodgeSpeed;
+        const moveY = (goalDy / moveDistance) * dodgeSpeed;
         bot.move(moveX, moveY);
       }
 
