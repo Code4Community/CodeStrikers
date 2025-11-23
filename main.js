@@ -821,7 +821,21 @@ class Game {
 
     const bot = this.defenders[0];
     const ball = this.soccerBall;
-    const botSpeed = 2.5; // Easy mode speed
+    const difficulty = this.botDifficulty || "easy";
+
+    // Difficulty settings
+    let botSpeed, shootDistance;
+    if (difficulty === "hard") {
+      botSpeed = 3.5;
+      shootDistance = 180;
+    } else if (difficulty === "medium") {
+      botSpeed = 3.5;
+      shootDistance = 150;
+    } else {
+      // easy
+      botSpeed = 2.5;
+      shootDistance = 120;
+    }
 
     // Get bot's feet position for accurate collision
     const botFeet = bot.getFeetBox();
@@ -842,19 +856,46 @@ class Game {
       const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
       const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
 
-      const goalDx = goalCenterX - botFeetCenterX;
-      const goalDy = goalCenterY - botFeetCenterY;
+      let goalDx = goalCenterX - botFeetCenterX;
+      let goalDy = goalCenterY - botFeetCenterY;
       const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
 
+      // Hard difficulty: dodge player when moving to goal
+      if (difficulty === "hard") {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y + this.player.height / 2;
+
+        // Check if player is in the way
+        const playerDx = playerCenterX - botFeetCenterX;
+        const playerDy = playerCenterY - botFeetCenterY;
+        const playerDistance = Math.sqrt(
+          playerDx * playerDx + playerDy * playerDy
+        );
+
+        // If player is close (within 120 pixels), dodge them
+        if (playerDistance < 120) {
+          // Dodge perpendicular to the direction toward player
+          // If player is above bot, dodge down; if below, dodge up
+          if (playerDy < 0) {
+            // Player is above, dodge down
+            goalDy += 150;
+          } else {
+            // Player is below, dodge up
+            goalDy -= 150;
+          }
+        }
+      }
+
       // Normalize and move
-      if (goalDistance > 10) {
-        const moveX = (goalDx / goalDistance) * botSpeed;
-        const moveY = (goalDy / goalDistance) * botSpeed;
+      const moveDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
+      if (moveDistance > 10) {
+        const moveX = (goalDx / moveDistance) * botSpeed;
+        const moveY = (goalDy / moveDistance) * botSpeed;
         bot.move(moveX, moveY);
       }
 
       // Shoot when close to goal
-      if (goalDistance < 120) {
+      if (goalDistance < shootDistance) {
         // Shoot logic similar to player
         if (!this._botShooting) {
           this._botShooting = true;
@@ -890,10 +931,52 @@ class Game {
         }
       }
     } else {
-      // Move bot's feet towards the ball
-      if (distance > 5) {
-        const moveX = (dx / distance) * botSpeed;
-        const moveY = (dy / distance) * botSpeed;
+      // Chase the ball (with interception for medium+)
+      let targetX = ballCenterX;
+      let targetY = ballCenterY;
+
+      // Medium/Hard difficulty: predict ball movement for interception
+      if (
+        (difficulty === "medium" || difficulty === "hard") &&
+        this.soccerBall._possessedBy === "player"
+      ) {
+        // If player has ball, move toward the ball (player's feet) to tackle
+        // But also consider blocking the goal path
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y + this.player.height / 2;
+        const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
+        const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
+
+        // Move aggressively toward the ball to tackle
+        targetX = ballCenterX;
+        targetY = ballCenterY;
+
+        // But if bot is far from ball, try to intercept path to goal
+        const botToPlayerDist = Math.sqrt(
+          (playerCenterX - botFeetCenterX) ** 2 +
+            (playerCenterY - botFeetCenterY) ** 2
+        );
+
+        const interceptThreshold = difficulty === "hard" ? 180 : 150;
+        if (botToPlayerDist > interceptThreshold) {
+          // Intercept point between player and goal
+          const interceptRatio = difficulty === "hard" ? 0.4 : 0.3;
+          targetX =
+            playerCenterX + (goalCenterX - playerCenterX) * interceptRatio;
+          targetY =
+            playerCenterY + (goalCenterY - playerCenterY) * interceptRatio;
+        }
+      }
+
+      const targetDx = targetX - botFeetCenterX;
+      const targetDy = targetY - botFeetCenterY;
+      const targetDistance = Math.sqrt(
+        targetDx * targetDx + targetDy * targetDy
+      );
+
+      if (targetDistance > 5) {
+        const moveX = (targetDx / targetDistance) * botSpeed;
+        const moveY = (targetDy / targetDistance) * botSpeed;
         bot.move(moveX, moveY);
       }
     }

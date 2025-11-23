@@ -578,6 +578,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (window.currentGame && window.currentGame.currentLevel === "bot") {
         window.currentGame.botModeStarted = true;
+        // Store the selected difficulty
+        const selectedDifficultyBtn = Array.from(
+          difficultyGrid.querySelectorAll(".difficulty-btn")
+        ).find((btn) => btn.classList.contains("selected"));
+        if (selectedDifficultyBtn) {
+          const difficultyText =
+            selectedDifficultyBtn.textContent.toLowerCase();
+          window.currentGame.botDifficulty = difficultyText;
+        }
       }
 
       hideStartUI();
