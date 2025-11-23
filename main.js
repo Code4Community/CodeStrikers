@@ -513,7 +513,11 @@ class Game {
     popup.innerHTML = `
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">${
-          winner === "player" ? "You Win!" : "Bot Wins!"
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+            ? "You Win!"
+            : "Bot Wins!"
         }</h2>
         <p>Final Score: ${this.playerScore || 0} - ${
       this.defenderScore || 0
@@ -597,6 +601,306 @@ class Game {
     };
   }
 
+  showFreeplayEndPopup(timePlayed) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag to stop bot movement
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">Game Ended!</h2>
+        <p>Time Played: ${timePlayed}</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn;
+      if (modeSelectedBtn && window.setupGameMode) {
+        window.setupGameMode(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.botModeStarted = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      const endGameBtn = document.getElementById("end-game-btn");
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+      if (endGameBtn) endGameBtn.style.display = "none";
+
+      // Show start UI again
+      if (window.showStartUI) {
+        window.showStartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+  }
+
+  showGameOverPopup1v1(winner) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._timerInterval) {
+      clearInterval(window._timerInterval);
+    }
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">${
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+            ? "Player Wins!"
+            : "Defender Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn1v1;
+      if (modeSelectedBtn && window.setupGameMode1v1) {
+        window.setupGameMode1v1(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.mode1v1Started = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn1v1 = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._timerInterval) {
+        clearInterval(window._timerInterval);
+        window._timerInterval = null;
+      }
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+
+      // Show start UI again
+      if (window.show1v1StartUI) {
+        window.show1v1StartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+  }
+
+  showFreeplayEndPopup1v1(timePlayed) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">Game Ended!</h2>
+        <p>Time Played: ${timePlayed}</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn1v1;
+      if (modeSelectedBtn && window.setupGameMode1v1) {
+        window.setupGameMode1v1(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.mode1v1Started = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn1v1 = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      const endGameBtn = document.getElementById("end-game-btn");
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+      if (endGameBtn) endGameBtn.style.display = "none";
+
+      // Show start UI again
+      if (window.show1v1StartUI) {
+        window.show1v1StartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+  }
+
   showGoalPopup() {
     if (document.getElementById("goal-popup")) return;
     if (this.currentLevel === 6) {
@@ -614,24 +918,28 @@ class Game {
         height: this.fieldRight.height,
       };
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
-        this.playerScore++;
+        this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
-        checkScoreCloseToWin();
+
+        // Check if player won by reaching target score
+        if (window._targetScore && this.playerScore >= window._targetScore) {
+          this.showGameOverPopup1v1("player");
+          return;
+        }
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
-        this.defenderScore++;
+        this.defenderScore = (this.defenderScore || 0) + 1;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
-        checkScoreCloseToWin();
+
+        // Check if defender won by reaching target score
+        if (window._targetScore && this.defenderScore >= window._targetScore) {
+          this.showGameOverPopup1v1("defender");
+          return;
+        }
       }
       this.loadLevel(6);
       const scoreboard = document.getElementById("scoreboard");
       if (scoreboard) scoreboard.style.display = "block";
-      const editor = document.getElementById("game-textbox");
-      if (editor) {
-        editor.style.display = "block";
-        editor.contentEditable = "true";
-        editor.classList.add("enabled");
-      }
       return;
     }
     // Do NOT show popup for bot mode
@@ -686,7 +994,14 @@ class Game {
       const timerValue = document.getElementById("timer-value");
       if (timerValue && timerValue.textContent === "0:00") {
         // Determine winner by score
-        const winner = this.playerScore > this.defenderScore ? "player" : "bot";
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
+        const winner =
+          playerScore > defenderScore
+            ? "player"
+            : playerScore < defenderScore
+            ? "bot"
+            : "tie";
         this.showGameOverPopup(winner);
         return;
       }
@@ -847,7 +1162,30 @@ class Game {
   }
 
   updateSmoothMovement() {
-    if (this.currentLevel === 6) {
+    if (this.currentLevel === 6 && this.mode1v1Started) {
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used)
+      const timerContainer = document.getElementById("timer-container");
+      const timerValue = document.getElementById("timer-value");
+      if (
+        timerContainer &&
+        timerContainer.style.display !== "none" &&
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !document.getElementById("game-over-popup")
+      ) {
+        // Determine winner by score (or declare tie)
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
+        const winner =
+          playerScore > defenderScore
+            ? "player"
+            : playerScore < defenderScore
+            ? "defender"
+            : "tie";
+        this.showGameOverPopup1v1(winner);
+        return;
+      }
+
       const speed = 4;
       let dx = 0,
         dy = 0;
@@ -887,11 +1225,15 @@ class Game {
         timerValue.textContent === "0:00" &&
         !document.getElementById("game-over-popup")
       ) {
-        // Determine winner by score
+        // Determine winner by score (or declare tie)
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
         const winner =
-          (this.playerScore || 0) > (this.defenderScore || 0)
+          playerScore > defenderScore
             ? "player"
-            : "bot";
+            : playerScore < defenderScore
+            ? "bot"
+            : "tie";
         this.showGameOverPopup(winner);
         return;
       }

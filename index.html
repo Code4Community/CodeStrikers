@@ -121,6 +121,79 @@
           <button class="difficulty-btn start-btn">Start</button>
         </div>
 
+        <div
+          class="difficulty-buttons"
+          id="mode-1v1-buttons"
+          style="display: none"
+        >
+          <div
+            style="
+              text-align: center;
+              font-size: 1.08em;
+              font-weight: 600;
+              color: #1976d2;
+              margin-bottom: 17px;
+            "
+          >
+            Select Game Mode
+          </div>
+          <div class="mode-buttons-1v1">
+            <button class="difficulty-btn timed-btn" id="timed-btn-1v1">
+              Timed
+            </button>
+            <button class="difficulty-btn toscore-btn" id="toscore-btn-1v1">
+              To Score
+            </button>
+            <button class="difficulty-btn freeplay-btn" id="freeplay-btn-1v1">
+              Freeplay
+            </button>
+          </div>
+          <div
+            id="freeplay-message-1v1"
+            style="
+              display: none;
+              margin: 10px 0 0 0;
+              text-align: center;
+              color: #1976d2;
+              font-size: 1.08em;
+              font-weight: 500;
+            "
+          >
+            No time or score limit
+          </div>
+          <div
+            id="timed-input-container-1v1"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="timed-minutes-1v1"
+              min="1"
+              max="20"
+              value="1"
+              class="timed-minutes-input"
+            />
+            <span class="timed-minutes-label">minutes</span>
+          </div>
+          <div
+            id="toscore-input-container-1v1"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="toscore-score-1v1"
+              min="1"
+              max="100"
+              placeholder="Enter a score"
+              class="toscore-score-input"
+              style="width: 120px"
+            />
+          </div>
+          <button class="difficulty-btn start-btn" id="start-btn-1v1">
+            Start
+          </button>
+        </div>
+
         <pre
           id="game-textbox"
           contenteditable="false"
@@ -190,15 +263,14 @@
             <span class="score-label">Defender</span>
           </div>
         </div>
-        <div class="scoreboard-actions">
-          <button
-            id="start-1v1-btn"
-            class="green-btn"
-            style="width: 100%; margin-top: 10px"
-          >
-            Start 1v1
-          </button>
-        </div>
+
+        <button
+          id="end-game-btn"
+          class="difficulty-btn red-btn"
+          style="display: none; margin: 10px auto 0"
+        >
+          End Game
+        </button>
 
         <div id="action-buttons" style="display: flex">
           <div class="button-row">
