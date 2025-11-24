@@ -1068,8 +1068,12 @@ class Game {
         this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
 
-        // Check if player won by reaching target score
-        if (window._targetScore && this.playerScore >= window._targetScore) {
+        // Check if player won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.playerScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
           this.showGameOverPopup1v1("player");
           return;
         }
@@ -1078,8 +1082,12 @@ class Game {
         document.getElementById("score-defender").textContent =
           this.defenderScore;
 
-        // Check if defender won by reaching target score
-        if (window._targetScore && this.defenderScore >= window._targetScore) {
+        // Check if defender won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.defenderScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
           this.showGameOverPopup1v1("defender");
           return;
         }
@@ -1120,8 +1128,12 @@ class Game {
         this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
 
-        // Check if player won by reaching target score
-        if (window._targetScore && this.playerScore >= window._targetScore) {
+        // Check if player won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.playerScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
           this.showGameOverPopup("player");
           return;
         }
@@ -1130,16 +1142,24 @@ class Game {
         document.getElementById("score-defender").textContent =
           this.defenderScore;
 
-        // Check if bot won by reaching target score
-        if (window._targetScore && this.defenderScore >= window._targetScore) {
+        // Check if bot won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.defenderScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
           this.showGameOverPopup("bot");
           return;
         }
       }
 
-      // Check if timer reached 0 in timed mode
+      // Check if timer reached 0 in timed mode (not in freeplay)
       const timerValue = document.getElementById("timer-value");
-      if (timerValue && timerValue.textContent === "0:00") {
+      if (
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !window._freeplayTimerInterval
+      ) {
         // Determine winner by score
         const playerScore = this.playerScore || 0;
         const defenderScore = this.defenderScore || 0;
@@ -1334,7 +1354,7 @@ class Game {
 
   updateSmoothMovement() {
     if (this.currentLevel === 6 && this.mode1v1Started) {
-      // Check if timer reached 0 in timed mode (only check if timer is actually being used)
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used and not in freeplay)
       const timerContainer = document.getElementById("timer-container");
       const timerValue = document.getElementById("timer-value");
       if (
@@ -1342,7 +1362,8 @@ class Game {
         timerContainer.style.display !== "none" &&
         timerValue &&
         timerValue.textContent === "0:00" &&
-        !document.getElementById("game-over-popup")
+        !document.getElementById("game-over-popup") &&
+        !window._freeplayTimerInterval
       ) {
         // Determine winner by score (or declare tie)
         const playerScore = this.playerScore || 0;
@@ -1513,7 +1534,7 @@ class Game {
       return;
     }
     if (this.currentLevel === "bot" && this.botModeStarted) {
-      // Check if timer reached 0 in timed mode (only check if timer is actually being used)
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used and not in freeplay)
       const timerContainer = document.getElementById("timer-container");
       const timerValue = document.getElementById("timer-value");
       if (
@@ -1521,7 +1542,8 @@ class Game {
         timerContainer.style.display !== "none" &&
         timerValue &&
         timerValue.textContent === "0:00" &&
-        !document.getElementById("game-over-popup")
+        !document.getElementById("game-over-popup") &&
+        !window._freeplayTimerInterval
       ) {
         // Determine winner by score (or declare tie)
         const playerScore = this.playerScore || 0;
@@ -1754,6 +1776,7 @@ class Game {
           this._defensivePassCount++;
 
           // Bot clears the ball away from player to regain control
+          this.isBallRolling = true;
           this._botShooting = true;
           this.soccerBall._lastShooter = "defender"; // Track who shot the ball
           this.soccerBall.isStuck = false;
@@ -1778,6 +1801,7 @@ class Game {
             } else {
               shootBall._rollingAngle = 0;
               if (shootBall.game) {
+                shootBall.game.isBallRolling = false;
                 shootBall.game._botShooting = false;
                 shootBall.game._stopBallAnimation = false;
               }
@@ -1894,6 +1918,7 @@ class Game {
       if (goalDistance < shootDistance) {
         // Shoot logic similar to player
         if (!this._botShooting) {
+          this.isBallRolling = true;
           this._botShooting = true;
           this.soccerBall._lastShooter = "defender"; // Track who shot the ball
           this.soccerBall.isStuck = false;
@@ -1919,6 +1944,7 @@ class Game {
             } else {
               shootBall._rollingAngle = 0;
               if (shootBall.game) {
+                shootBall.game.isBallRolling = false;
                 shootBall.game._botShooting = false;
                 shootBall.game._stopBallAnimation = false;
               }
