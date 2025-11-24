@@ -404,6 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (nextLevel !== undefined) {
+      currentGame.removeGoalers();
       currentGame.loadLevel(nextLevel);
       document.getElementById("level-dropdown").value = nextLevel;
       currentGame.player.reset();
@@ -439,6 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (prevLevel !== undefined) {
+      currentGame.removeGoalers();
       currentGame.loadLevel(prevLevel);
       document.getElementById("level-dropdown").value = prevLevel;
       currentGame.player.reset();
@@ -466,6 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const currentGame = window.currentGame;
     if (currentGame) {
+      currentGame.removeGoalers();
       currentGame.loadLevel(selectedLevel);
       currentGame.player.reset();
       if (currentGame.soccerBall) {
@@ -551,6 +554,35 @@ document.addEventListener("DOMContentLoaded", () => {
         parseInt(document.getElementById("timed-minutes").value, 10) || 1;
       return min * 60;
     };
+  }
+
+  // Goalers buttons for bot mode
+  const goalersButtonsContainer = document.querySelector(".goalers-buttons");
+  if (goalersButtonsContainer) {
+    const goalersButtons =
+      goalersButtonsContainer.querySelectorAll(".difficulty-btn");
+    const goalersOffBtn = document.getElementById("goalers-off-btn");
+    const goalersOnBtn = document.getElementById("goalers-on-btn");
+
+    goalersButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        goalersButtons.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+
+        // Add or remove goalers based on selection
+        if (window.currentGame) {
+          if (btn === goalersOnBtn) {
+            window.currentGame.addGoalers();
+          } else {
+            window.currentGame.removeGoalers();
+          }
+        }
+      });
+    });
   }
 
   // Start button
@@ -669,6 +701,37 @@ document.addEventListener("DOMContentLoaded", () => {
           if (toscoreInputContainer1v1)
             toscoreInputContainer1v1.style.display = "none";
           if (freeplayMessage1v1) freeplayMessage1v1.style.display = "none";
+        }
+      });
+    });
+  }
+
+  // Goalers buttons for 1v1
+  const goalersButtonsContainer1v1 = document.querySelector(
+    ".goalers-buttons-1v1"
+  );
+  if (goalersButtonsContainer1v1) {
+    const goalersButtons1v1 =
+      goalersButtonsContainer1v1.querySelectorAll(".difficulty-btn");
+    const goalersOffBtn1v1 = document.getElementById("goalers-off-btn-1v1");
+    const goalersOnBtn1v1 = document.getElementById("goalers-on-btn-1v1");
+
+    goalersButtons1v1.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        goalersButtons1v1.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+
+        // Add or remove goalers based on selection
+        if (window.currentGame) {
+          if (btn === goalersOnBtn1v1) {
+            window.currentGame.addGoalers();
+          } else {
+            window.currentGame.removeGoalers();
+          }
         }
       });
     });

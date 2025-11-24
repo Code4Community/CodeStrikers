@@ -33,7 +33,9 @@
 /* Difficulty Buttons Styling */
 /* Mode Buttons Styling */
 .mode-buttons,
-.mode-buttons-1v1 {
+.mode-buttons-1v1,
+.goalers-buttons-1v1,
+.goalers-buttons {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -595,6 +597,7 @@ body > * {
   display: flex;
   gap: 12px;
   justify-content: center;
+  margin-top: -8px;
 }
 
 .nav-btn {
