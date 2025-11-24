@@ -81,12 +81,12 @@ class Player {
     };
   }
 
-  constructor(game) {
+  constructor(game, x, y) {
     this.game = game;
     this.width = 50;
     this.height = 100;
-    this.x = 100;
-    this.y = 100;
+    this.x = x !== undefined ? x : 100;
+    this.y = y !== undefined ? y : 100;
     this.startX = this.x;
     this.startY = this.y;
     this.speed = 55;
@@ -259,8 +259,20 @@ class Defender {
   }
 
   move(dx, dy) {
-    this.x = Math.max(0, Math.min(this.x + dx, this.game.width - this.width));
-    this.y = Math.max(0, Math.min(this.y + dy, this.game.height - this.height));
+    const newX = Math.max(
+      0,
+      Math.min(this.x + dx, this.game.width - this.width)
+    );
+    const newY = Math.max(
+      0,
+      Math.min(this.y + dy, this.game.height - this.height)
+    );
+
+    // Only move if not colliding with goaler
+    if (!this.game.wouldCollideWithGoaler(this, newX, newY)) {
+      this.x = newX;
+      this.y = newY;
+    }
   }
 
   draw(context) {
@@ -314,6 +326,50 @@ class Game {
     );
   }
 
+  wouldCollideWithGoaler(entity, newX, newY) {
+    // Create a temporary box with the new position
+    // Shrink the collision box by 20 pixels on each side
+    const shrinkAmount = 20;
+    const tempBox = {
+      x: newX + shrinkAmount,
+      y: newY + shrinkAmount,
+      width: entity.width - shrinkAmount * 2,
+      height: entity.height - shrinkAmount * 2,
+    };
+
+    // Check collision with left goalers
+    if (this.goalersLeft && this.goalersLeft.length > 0) {
+      for (let goaler of this.goalersLeft) {
+        const goalerBox = {
+          x: goaler.x + shrinkAmount,
+          y: goaler.y + shrinkAmount,
+          width: goaler.width - shrinkAmount * 2,
+          height: goaler.height - shrinkAmount * 2,
+        };
+        if (Game.rectsOverlap(tempBox, goalerBox)) {
+          return true;
+        }
+      }
+    }
+
+    // Check collision with right goalers
+    if (this.goalersRight && this.goalersRight.length > 0) {
+      for (let goaler of this.goalersRight) {
+        const goalerBox = {
+          x: goaler.x + shrinkAmount,
+          y: goaler.y + shrinkAmount,
+          width: goaler.width - shrinkAmount * 2,
+          height: goaler.height - shrinkAmount * 2,
+        };
+        if (Game.rectsOverlap(tempBox, goalerBox)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   constructor(canvas) {
     this.canvas = canvas;
     this.width = this.canvas.width;
@@ -324,12 +380,16 @@ class Game {
     this.player = new Player(this);
     this.soccerBall = new SoccerBall(this);
     this.defenders = [];
+    this.goalersLeft = []; // Blue team goalers (left goal)
+    this.goalersRight = []; // Red team goalers (right goal)
+    this.goalersEnabled = false;
     this.player.x = 100;
     this.player.y = 270;
     this.player.startX = this.player.x;
     this.player.startY = this.player.y;
     this.isExecuting = false;
     this.pressedKeys = new Set();
+    this.isBallRolling = false; // Prevent repeated spacebar triggers
   }
 
   getPlayerDirection(playerType) {
@@ -357,24 +417,111 @@ class Game {
     const ballBox = this.soccerBall.getBox();
     let playerFeetBox = this.player.getFeetBox();
     let defenderFeetBox = null;
-    if (this.currentLevel === 7 && this.defenders[0]) {
+    if (
+      (this.currentLevel === 6 ||
+        this.currentLevel === 7 ||
+        this.currentLevel === "bot") &&
+      this.defenders[0]
+    ) {
       defenderFeetBox = this.defenders[0].getFeetBox();
     }
 
-    if (this.currentLevel === 6) {
-      // Don't re-stick the ball if it's currently being shot
-      if (!this.soccerBall._isShooting) {
+    // Prevent ball from re-sticking during roll animation
+    if (this.isBallRolling) {
+      // Allow interception during roll - opposing player can steal the ball
+      if (this.currentLevel === 6) {
+        // 1v1 mode: check if opposing player touches the ball during roll
         if (
-          !this.soccerBall.isStuck &&
+          this.soccerBall._lastShooter === "player" &&
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          // Defender intercepts player's shot
+          this.isBallRolling = false;
+          this._stopBallAnimation = true;
+          this.soccerBall._possessedBy = "defender";
+          this.soccerBall.isStuck = true;
+          this.soccerBall.stickToPlayer(this.defenders[0]);
+        } else if (
+          this.soccerBall._lastShooter === "defender" &&
           Game.rectsOverlap(playerFeetBox, ballBox)
         ) {
+          // Player intercepts defender's shot
+          this.isBallRolling = false;
+          this._defender1v1Shooting = false;
+          this._stopBallAnimation = true;
+          this.soccerBall._possessedBy = "player";
           this.soccerBall.isStuck = true;
+          this.soccerBall.stickToPlayer(this.player);
         }
-        if (this.soccerBall.isStuck) {
+      } else if (this.currentLevel === "bot") {
+        // Bot mode: check if player can intercept bot's shot or bot can intercept player's shot
+        if (
+          this.soccerBall._lastShooter === "player" &&
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          // Bot intercepts player's shot
+          this.isBallRolling = false;
+          this._stopBallAnimation = true;
+          this.soccerBall._possessedBy = "defender";
+          this.soccerBall.isStuck = true;
+          this.soccerBall.stickToPlayer(this.defenders[0]);
+        } else if (
+          this.soccerBall._lastShooter === "defender" &&
+          Game.rectsOverlap(playerFeetBox, ballBox)
+        ) {
+          // Player intercepts bot's shot
+          this._botShooting = false;
+          this._stopBallAnimation = true;
+          this.soccerBall._possessedBy = "player";
+          this.soccerBall.isStuck = true;
           this.soccerBall.stickToPlayer(this.player);
         }
       }
-    } else if (this.currentLevel === 7) {
+    } else if (this._botShooting) {
+      // Do nothing: bot is shooting, ignore all stick logic
+    } else if (this._defender1v1Shooting) {
+      // Do nothing: defender is shooting in 1v1, ignore all stick logic
+    } else if (this.currentLevel === 6) {
+      // 1v1 mode: both players can possess the ball
+      if (!this.soccerBall._possessedBy) {
+        if (Game.rectsOverlap(playerFeetBox, ballBox)) {
+          this.soccerBall._possessedBy = "player";
+        } else if (
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "defender";
+        }
+      } else {
+        // Allow stealing the ball
+        if (
+          this.soccerBall._possessedBy === "player" &&
+          defenderFeetBox &&
+          Game.rectsOverlap(defenderFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "defender";
+        } else if (
+          this.soccerBall._possessedBy === "defender" &&
+          Game.rectsOverlap(playerFeetBox, ballBox)
+        ) {
+          this.soccerBall._possessedBy = "player";
+        }
+      }
+      if (this.soccerBall._possessedBy === "player") {
+        this.soccerBall.isStuck = true;
+        this.soccerBall.stickToPlayer(this.player);
+      } else if (
+        this.soccerBall._possessedBy === "defender" &&
+        this.defenders[0]
+      ) {
+        this.soccerBall.isStuck = true;
+        this.soccerBall.stickToPlayer(this.defenders[0]);
+      } else {
+        this.soccerBall.isStuck = false;
+      }
+    } else if (this.currentLevel === 7 || this.currentLevel === "bot") {
       if (!this.soccerBall._possessedBy) {
         if (Game.rectsOverlap(playerFeetBox, ballBox)) {
           this.soccerBall._possessedBy = "player";
@@ -411,7 +558,6 @@ class Game {
         this.soccerBall.isStuck = false;
       }
     } else {
-      // Don't re-stick the ball if it's currently being shot
       if (!this.soccerBall._isShooting) {
         this.soccerBall.isStuck = Game.rectsOverlap(playerFeetBox, ballBox);
         if (this.soccerBall.isStuck) {
@@ -419,6 +565,63 @@ class Game {
         }
       }
       this.soccerBall._possessedBy = undefined;
+    }
+
+    // Goaler collision detection - ball sticks to any part of goaler's body
+    // Skip collision if a goaler is actively passing (with cooldown)
+    if (
+      this.goalersEnabled &&
+      !this.soccerBall.isStuck &&
+      !this._goalerLeftPassing &&
+      !this._goalerRightPassing
+    ) {
+      const ballBox = this.soccerBall.getBox();
+
+      // Check left goalers (blue team)
+      if (this.goalersLeft && this.goalersLeft.length > 0) {
+        for (const goaler of this.goalersLeft) {
+          const goalerBox = {
+            x: goaler.x,
+            y: goaler.y,
+            width: goaler.width,
+            height: goaler.height,
+          };
+
+          if (Game.rectsOverlap(ballBox, goalerBox)) {
+            this.isBallRolling = false;
+            this._stopBallAnimation = true;
+            this.soccerBall.isStuck = true;
+            this.soccerBall._possessedBy = "goaler-left";
+            this.soccerBall.stickToPlayer(goaler);
+            break;
+          }
+        }
+      }
+
+      // Check right goalers (red team)
+      if (
+        this.goalersRight &&
+        this.goalersRight.length > 0 &&
+        !this.soccerBall.isStuck
+      ) {
+        for (const goaler of this.goalersRight) {
+          const goalerBox = {
+            x: goaler.x,
+            y: goaler.y,
+            width: goaler.width,
+            height: goaler.height,
+          };
+
+          if (Game.rectsOverlap(ballBox, goalerBox)) {
+            this.isBallRolling = false;
+            this._stopBallAnimation = true;
+            this.soccerBall.isStuck = true;
+            this.soccerBall._possessedBy = "goaler-right";
+            this.soccerBall.stickToPlayer(goaler);
+            break;
+          }
+        }
+      }
     }
 
     // Goal collision detection
@@ -481,9 +684,425 @@ class Game {
     ) {
       this.defenders.forEach((defender) => defender.draw(context));
     }
+    // Draw goalers if enabled
+    if (this.goalersLeft && this.goalersLeft.length > 0) {
+      this.goalersLeft.forEach((goaler) => goaler.draw(context));
+    }
+    if (this.goalersRight && this.goalersRight.length > 0) {
+      this.goalersRight.forEach((goaler) => goaler.draw(context));
+    }
     this.player.draw(context);
     this.soccerBall.draw(context);
+    this.updateGoalerAI();
     this.player.update();
+  }
+
+  showGameOverPopup(winner) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag to stop bot movement
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._timerInterval) {
+      clearInterval(window._timerInterval);
+    }
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">${
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+            ? "You Win!"
+            : "Bot Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn;
+      if (modeSelectedBtn && window.setupGameMode) {
+        window.setupGameMode(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.botModeStarted = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._timerInterval) {
+        clearInterval(window._timerInterval);
+        window._timerInterval = null;
+      }
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+
+      // Show start UI again
+      if (window.showStartUI) {
+        window.showStartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+  }
+
+  showFreeplayEndPopup(timePlayed) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag to stop bot movement
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">Game Ended!</h2>
+        <p>Time Played: ${timePlayed}</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn;
+      if (modeSelectedBtn && window.setupGameMode) {
+        window.setupGameMode(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.botModeStarted = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+      this._defensivePassCount = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      const endGameBtn = document.getElementById("end-game-btn");
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+      if (endGameBtn) endGameBtn.style.display = "none";
+
+      // Show start UI again
+      if (window.showStartUI) {
+        window.showStartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel("bot");
+    };
+  }
+
+  showGameOverPopup1v1(winner) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._timerInterval) {
+      clearInterval(window._timerInterval);
+    }
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">${
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+            ? "Player Wins!"
+            : "Defender Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn1v1;
+      if (modeSelectedBtn && window.setupGameMode1v1) {
+        window.setupGameMode1v1(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.mode1v1Started = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn1v1 = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._timerInterval) {
+        clearInterval(window._timerInterval);
+        window._timerInterval = null;
+      }
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+
+      // Show start UI again
+      if (window.show1v1StartUI) {
+        window.show1v1StartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+  }
+
+  showFreeplayEndPopup1v1(timePlayed) {
+    if (document.getElementById("game-over-popup")) return;
+
+    // Set game over flag
+    this.isGameOver = true;
+
+    // Stop all timers
+    if (window._freeplayTimerInterval) {
+      clearInterval(window._freeplayTimerInterval);
+    }
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-popup";
+    popup.className = "goal-popup";
+    popup.innerHTML = `
+      <div class="goal-popup-content">
+        <h2 class="goal-unique-effect">Game Ended!</h2>
+        <p>Time Played: ${timePlayed}</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+      this.defenderScore || 0
+    }</p>
+        <button id="play-again-btn" class="green-btn">Play Again</button>
+        <button id="close-game-over-btn" class="red-btn">Close</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    document.getElementById("play-again-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Update scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Restart the game mode (timers, etc.)
+      const modeSelectedBtn = window._currentModeBtn1v1;
+      if (modeSelectedBtn && window.setupGameMode1v1) {
+        window.setupGameMode1v1(modeSelectedBtn);
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
+
+    document.getElementById("close-game-over-btn").onclick = () => {
+      popup.remove();
+
+      // Reset game state
+      this.isGameOver = false;
+      this.mode1v1Started = false;
+      this.playerScore = 0;
+      this.defenderScore = 0;
+
+      // Reset scoreboard
+      document.getElementById("score-player").textContent = "0";
+      document.getElementById("score-defender").textContent = "0";
+
+      // Clear stored settings
+      window._currentModeBtn1v1 = null;
+      window._targetScore = undefined;
+
+      // Stop all timers
+      if (window._freeplayTimerInterval) {
+        clearInterval(window._freeplayTimerInterval);
+        window._freeplayTimerInterval = null;
+      }
+
+      // Hide all timer/score displays
+      const targetScoreContainer = document.getElementById(
+        "targetscore-container"
+      );
+      const timerContainer = document.getElementById("timer-container");
+      const freeplayTimerContainer = document.getElementById(
+        "freeplay-timer-container"
+      );
+      const endGameBtn = document.getElementById("end-game-btn");
+      if (targetScoreContainer) targetScoreContainer.style.display = "none";
+      if (timerContainer) timerContainer.style.display = "none";
+      if (freeplayTimerContainer) freeplayTimerContainer.style.display = "none";
+      if (endGameBtn) endGameBtn.style.display = "none";
+
+      // Show start UI again
+      if (window.show1v1StartUI) {
+        window.show1v1StartUI();
+      }
+
+      // Reset the level/ball position
+      this.loadLevel(6);
+    };
   }
 
   showGoalPopup() {
@@ -503,24 +1122,117 @@ class Game {
         height: this.fieldRight.height,
       };
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
-        this.playerScore++;
+        this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
-        checkScoreCloseToWin();
+
+        // Check if player won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.playerScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
+          this.showGameOverPopup1v1("player");
+          return;
+        }
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
-        this.defenderScore++;
+        this.defenderScore = (this.defenderScore || 0) + 1;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
-        checkScoreCloseToWin();
+
+        // Check if defender won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.defenderScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
+          this.showGameOverPopup1v1("defender");
+          return;
+        }
       }
       this.loadLevel(6);
       const scoreboard = document.getElementById("scoreboard");
       if (scoreboard) scoreboard.style.display = "block";
-      const editor = document.getElementById("game-textbox");
-      if (editor) {
-        editor.style.display = "block";
-        editor.contentEditable = "true";
-        editor.classList.add("enabled");
+      return;
+    }
+    // Do NOT show popup for bot mode
+    if (this.currentLevel === "bot") {
+      // Stop any ongoing ball rolling animation
+      this._stopBallAnimation = true;
+      this.isBallRolling = false;
+      this.soccerBall._rollingAngle = 0;
+
+      // Unstick the ball and reset possession
+      this.soccerBall.isStuck = false;
+      this.soccerBall._possessedBy = undefined;
+
+      // Reset defensive pass counter for impossible mode
+      this._defensivePassCount = 0;
+
+      const ballBox = this.soccerBall.getBox();
+      const leftGoalBox = {
+        x: this.fieldLeft.x,
+        y: this.fieldLeft.y,
+        width: this.fieldLeft.width,
+        height: this.fieldLeft.height,
+      };
+      const rightGoalBox = {
+        x: this.fieldRight.x,
+        y: this.fieldRight.y,
+        width: this.fieldRight.width,
+        height: this.fieldRight.height,
+      };
+      if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+        this.playerScore = (this.playerScore || 0) + 1;
+        document.getElementById("score-player").textContent = this.playerScore;
+
+        // Check if player won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.playerScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
+          this.showGameOverPopup("player");
+          return;
+        }
+      } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+        this.defenderScore = (this.defenderScore || 0) + 1;
+        document.getElementById("score-defender").textContent =
+          this.defenderScore;
+
+        // Check if bot won by reaching target score (not in freeplay mode)
+        if (
+          window._targetScore &&
+          this.defenderScore >= window._targetScore &&
+          !window._freeplayTimerInterval
+        ) {
+          this.showGameOverPopup("bot");
+          return;
+        }
       }
+
+      // Check if timer reached 0 in timed mode (not in freeplay)
+      const timerValue = document.getElementById("timer-value");
+      if (
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !window._freeplayTimerInterval
+      ) {
+        // Determine winner by score
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
+        const winner =
+          playerScore > defenderScore
+            ? "player"
+            : playerScore < defenderScore
+            ? "bot"
+            : "tie";
+        this.showGameOverPopup(winner);
+        return;
+      }
+
+      this.loadLevel("bot");
+      const scoreboard = document.getElementById("scoreboard");
+      if (scoreboard) scoreboard.style.display = "block";
       return;
     }
 
@@ -562,6 +1274,30 @@ class Game {
     if (window.LevelManager) {
       window.LevelManager.loadLevel(this, level);
     }
+  }
+
+  addGoalers() {
+    // Clear existing goalers
+    this.goalersLeft = [];
+    this.goalersRight = [];
+    this.goalersEnabled = true;
+
+    // Position goalers in front of their respective goals
+    // Left goal goaler (blue team) - positioned closer to left goal
+    const leftGoalerX = 50; // Closer to left goal
+    const leftGoalerY = (this.height - 70) / 2 - 30; // Centered vertically and raised up
+    this.goalersLeft.push(new Player(this, leftGoalerX, leftGoalerY));
+
+    // Right goal goaler (red team) - positioned closer to right goal
+    const rightGoalerX = this.width - 110; // Closer to right goal
+    const rightGoalerY = (this.height - 70) / 2; // Centered vertically
+    this.goalersRight.push(new Defender(this, rightGoalerX, rightGoalerY));
+  }
+
+  removeGoalers() {
+    this.goalersLeft = [];
+    this.goalersRight = [];
+    this.goalersEnabled = false;
   }
 
   async executeUserCode(code, shouldStop) {
@@ -674,7 +1410,31 @@ class Game {
   }
 
   updateSmoothMovement() {
-    if (this.currentLevel === 6) {
+    if (this.currentLevel === 6 && this.mode1v1Started) {
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used and not in freeplay)
+      const timerContainer = document.getElementById("timer-container");
+      const timerValue = document.getElementById("timer-value");
+      if (
+        timerContainer &&
+        timerContainer.style.display !== "none" &&
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !document.getElementById("game-over-popup") &&
+        !window._freeplayTimerInterval
+      ) {
+        // Determine winner by score (or declare tie)
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
+        const winner =
+          playerScore > defenderScore
+            ? "player"
+            : playerScore < defenderScore
+            ? "defender"
+            : "tie";
+        this.showGameOverPopup1v1(winner);
+        return;
+      }
+
       const speed = 4;
       let dx = 0,
         dy = 0;
@@ -683,14 +1443,19 @@ class Game {
       if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
       if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
       if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
+        const newX = Math.max(
           0,
           Math.min(this.width - this.player.width, this.player.x + dx)
         );
-        this.player.y = Math.max(
+        const newY = Math.max(
           0,
           Math.min(this.height - this.player.height, this.player.y + dy)
         );
+        // Only move if not colliding with goaler
+        if (!this.wouldCollideWithGoaler(this.player, newX, newY)) {
+          this.player.x = newX;
+          this.player.y = newY;
+        }
       }
       dx = 0;
       dy = 0;
@@ -699,11 +1464,157 @@ class Game {
       if (this.pressedKeys.has("ArrowUp")) dy -= speed;
       if (this.pressedKeys.has("ArrowDown")) dy += speed;
       if ((dx !== 0 || dy !== 0) && this.defenders[0]) {
-        this.defenders[0].move(dx, dy);
+        const newX = Math.max(
+          0,
+          Math.min(
+            this.width - this.defenders[0].width,
+            this.defenders[0].x + dx
+          )
+        );
+        const newY = Math.max(
+          0,
+          Math.min(
+            this.height - this.defenders[0].height,
+            this.defenders[0].y + dy
+          )
+        );
+        // Only move if not colliding with goaler
+        if (!this.wouldCollideWithGoaler(this.defenders[0], newX, newY)) {
+          this.defenders[0].x = newX;
+          this.defenders[0].y = newY;
+        }
       }
+
+      // Space key shoot logic for blue player (WASD)
+      if (
+        this.pressedKeys.has(" ") &&
+        !this.isBallRolling &&
+        !this._defender1v1Shooting
+      ) {
+        // Only allow shoot if ball is stuck to player AND player has possession
+        if (
+          this.soccerBall.isStuck &&
+          this.soccerBall._possessedBy === "player"
+        ) {
+          this.isBallRolling = true;
+          this.soccerBall._lastShooter = "player"; // Track who shot the ball
+          // Set ball position to player's feet before rolling
+          const feet = this.player.getFeetBox();
+          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
+          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+          const ball = this.soccerBall;
+          const spaces = this.player.speed * 4;
+          const frames = 32;
+          let dxBall = spaces / frames;
+          let speed = dxBall * 0.9; // Reduced shooting distance
+          let frameCount = 0;
+          const game = this;
+          function animateRoll() {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
+              ball.x += speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
+              ball.x = Math.min(ball.x, ball.game.width - ball.width);
+              speed *= 0.97; // Decelerate
+              frameCount++;
+              requestAnimationFrame(animateRoll);
+            } else {
+              ball._rollingAngle = 0;
+              // Allow future rolls
+              if (ball.game) {
+                ball.game.isBallRolling = false;
+                ball.game._stopBallAnimation = false;
+              }
+            }
+          }
+          animateRoll();
+        }
+        // Remove space key so it doesn't repeat
+        this.pressedKeys.delete(" ");
+      }
+
+      // M key shoot logic for red player (Arrow keys)
+      if (
+        (this.pressedKeys.has("m") || this.pressedKeys.has("M")) &&
+        !this.isBallRolling &&
+        !this._defender1v1Shooting
+      ) {
+        // Only allow shoot if ball is stuck to defender AND defender has possession
+        if (
+          this.soccerBall.isStuck &&
+          this.soccerBall._possessedBy === "defender" &&
+          this.defenders[0]
+        ) {
+          this.isBallRolling = true;
+          this._defender1v1Shooting = true;
+          this.soccerBall._lastShooter = "defender"; // Track who shot the ball
+          // Set ball position to defender's feet before rolling
+          const feet = this.defenders[0].getFeetBox();
+          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
+          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+          const ball = this.soccerBall;
+          const spaces = this.player.speed * 4;
+          const frames = 32;
+          let shootSpeed = (spaces / frames) * 0.9; // Reduced shooting distance
+          let frameCount = 0;
+          const game = this;
+          function animateRoll() {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
+              ball.x -= shootSpeed; // Subtract to move left
+              ball._rollingAngle = (ball._rollingAngle || 0) - Math.PI / 10;
+              ball.x = Math.max(ball.x, 0);
+              shootSpeed *= 0.97; // Decelerate
+              frameCount++;
+              requestAnimationFrame(animateRoll);
+            } else {
+              ball._rollingAngle = 0;
+              // Allow future rolls
+              if (ball.game) {
+                ball.game.isBallRolling = false;
+                ball.game._defender1v1Shooting = false;
+                ball.game._stopBallAnimation = false;
+              }
+            }
+          }
+          animateRoll();
+        }
+        // Remove M key so it doesn't repeat
+        this.pressedKeys.delete("m");
+        this.pressedKeys.delete("M");
+      }
+
       return;
     }
     if (this.currentLevel === "bot" && this.botModeStarted) {
+      // Check if timer reached 0 in timed mode (only check if timer is actually being used and not in freeplay)
+      const timerContainer = document.getElementById("timer-container");
+      const timerValue = document.getElementById("timer-value");
+      if (
+        timerContainer &&
+        timerContainer.style.display !== "none" &&
+        timerValue &&
+        timerValue.textContent === "0:00" &&
+        !document.getElementById("game-over-popup") &&
+        !window._freeplayTimerInterval
+      ) {
+        // Determine winner by score (or declare tie)
+        const playerScore = this.playerScore || 0;
+        const defenderScore = this.defenderScore || 0;
+        const winner =
+          playerScore > defenderScore
+            ? "player"
+            : playerScore < defenderScore
+            ? "bot"
+            : "tie";
+        this.showGameOverPopup(winner);
+        return;
+      }
+
       const speed = 4;
       let dx = 0,
         dy = 0;
@@ -712,14 +1623,779 @@ class Game {
       if (this.pressedKeys.has("w") || this.pressedKeys.has("W")) dy -= speed;
       if (this.pressedKeys.has("s") || this.pressedKeys.has("S")) dy += speed;
       if (dx !== 0 || dy !== 0) {
-        this.player.x = Math.max(
+        const newX = Math.max(
           0,
           Math.min(this.width - this.player.width, this.player.x + dx)
         );
-        this.player.y = Math.max(
+        const newY = Math.max(
           0,
           Math.min(this.height - this.player.height, this.player.y + dy)
         );
+        // Only move if not colliding with goaler
+        if (!this.wouldCollideWithGoaler(this.player, newX, newY)) {
+          this.player.x = newX;
+          this.player.y = newY;
+        }
+      }
+      // Space key shoot logic for WASD player
+      if (this.pressedKeys.has(" ") && !this.isBallRolling) {
+        // Only allow shoot if ball is stuck to player AND player has possession
+        if (
+          this.soccerBall.isStuck &&
+          this.soccerBall._possessedBy === "player"
+        ) {
+          this.isBallRolling = true;
+          this.soccerBall._lastShooter = "player"; // Track who shot the ball
+          // Set ball position to player's feet before rolling
+          const feet = this.player.getFeetBox();
+          this.soccerBall.x = feet.x + (feet.width - this.soccerBall.width) / 2;
+          this.soccerBall.y = feet.y + feet.height - this.soccerBall.height / 2;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+          const ball = this.soccerBall;
+          const spaces = this.player.speed * 4;
+          const frames = 32;
+          let dxBall = spaces / frames;
+          let speed = dxBall * 1.2; // Medium speed
+          let frameCount = 0;
+          const game = this;
+          function animateRoll() {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
+              ball.x += speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 10;
+              ball.x = Math.min(ball.x, ball.game.width - ball.width);
+              speed *= 0.97; // Decelerate
+              frameCount++;
+              requestAnimationFrame(animateRoll);
+            } else {
+              ball._rollingAngle = 0;
+              // Allow future rolls
+              if (ball.game) {
+                ball.game.isBallRolling = false;
+                ball.game._stopBallAnimation = false;
+              }
+            }
+          }
+          animateRoll();
+        }
+        // Remove space key so it doesn't repeat
+        this.pressedKeys.delete(" ");
+      }
+
+      // Update bot AI
+      this.updateBotAI();
+    }
+  }
+
+  updateGoalerAI() {
+    // Only update goalers if they are enabled and game is active
+    if (!this.goalersEnabled || this.isGameOver) return;
+
+    const goalerSpeed = 4; // Slightly slower to give bot better chance
+    const activationDistance = 250; // Distance at which goaler starts tracking
+    const alignmentDeadzone = 5; // Stop moving when within this many pixels of target Y
+
+    // Update left goal goaler (blue team) - defends against red team
+    if (this.goalersLeft && this.goalersLeft.length > 0) {
+      const leftGoaler = this.goalersLeft[0];
+      let threat = null;
+
+      // Calculate goal box bounds
+      const goalInset = 49;
+      const goalBoxMinY = this.fieldLeft.y + goalInset;
+      const goalBoxMaxY =
+        this.fieldLeft.y +
+        this.fieldLeft.height -
+        goalInset -
+        leftGoaler.height;
+
+      // In 1v1 mode, defend against the red player (defender)
+      if (this.currentLevel === 6 && this.defenders[0]) {
+        threat = this.defenders[0];
+      }
+      // In bot mode, defend against the bot (also stored as defender)
+      else if (this.currentLevel === "bot" && this.defenders[0]) {
+        threat = this.defenders[0];
+      }
+
+      // If there's a threat within activation distance, track it
+      if (threat) {
+        const distance = Math.sqrt(
+          Math.pow(threat.x - leftGoaler.x, 2) +
+            Math.pow(threat.y - leftGoaler.y, 2)
+        );
+
+        if (distance < activationDistance) {
+          const yDiff = Math.abs(threat.y - leftGoaler.y);
+          // Only move if not already aligned (deadzone prevents jittering)
+          if (yDiff > alignmentDeadzone) {
+            // Move towards threat's Y position to block, but stay within goal box
+            if (threat.y < leftGoaler.y) {
+              leftGoaler.y = Math.max(goalBoxMinY, leftGoaler.y - goalerSpeed);
+            } else if (threat.y > leftGoaler.y) {
+              leftGoaler.y = Math.min(goalBoxMaxY, leftGoaler.y + goalerSpeed);
+            }
+          }
+        }
+      }
+    }
+
+    // Update right goal goaler (red team) - defends against blue team
+    if (this.goalersRight && this.goalersRight.length > 0) {
+      const rightGoaler = this.goalersRight[0];
+      let threat = null;
+
+      // Calculate goal box bounds
+      const goalInset = 49;
+      const goalBoxMinY = this.fieldRight.y + goalInset;
+      const goalBoxMaxY =
+        this.fieldRight.y +
+        this.fieldRight.height -
+        goalInset -
+        rightGoaler.height;
+
+      // Defend against the main player (blue)
+      threat = this.player;
+
+      // If there's a threat within activation distance, track it
+      if (threat) {
+        const distance = Math.sqrt(
+          Math.pow(threat.x - rightGoaler.x, 2) +
+            Math.pow(threat.y - rightGoaler.y, 2)
+        );
+
+        if (distance < activationDistance) {
+          const yDiff = Math.abs(threat.y - rightGoaler.y);
+          // Only move if not already aligned (deadzone prevents jittering)
+          if (yDiff > alignmentDeadzone) {
+            // Move towards threat's Y position to block, but stay within goal box
+            if (threat.y < rightGoaler.y) {
+              rightGoaler.y = Math.max(
+                goalBoxMinY,
+                rightGoaler.y - goalerSpeed
+              );
+            } else if (threat.y > rightGoaler.y) {
+              rightGoaler.y = Math.min(
+                goalBoxMaxY,
+                rightGoaler.y + goalerSpeed
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Goaler passing logic - pass ball back to teammate when safe
+    const teammateCloseDistance = 350; // Teammate must be within this distance
+    const threatSafeDistance = 150; // Threat must be farther than this distance
+
+    // Left goaler (blue team) passing to player
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-left" &&
+      !this._goalerLeftPassing
+    ) {
+      const leftGoaler = this.goalersLeft[0];
+      const teammate = this.player;
+      let threat = null;
+
+      // Identify the threat (opponent)
+      if (this.currentLevel === 6 && this.defenders[0]) {
+        threat = this.defenders[0];
+      } else if (this.currentLevel === "bot" && this.defenders[0]) {
+        threat = this.defenders[0];
+      }
+
+      if (teammate && threat) {
+        // Get teammate's feet position for accurate targeting
+        const teammateFeet = teammate.getFeetBox();
+        const teammateFeetCenterX = teammateFeet.x + teammateFeet.width / 2;
+        const teammateFeetCenterY = teammateFeet.y + teammateFeet.height / 2;
+
+        // Calculate distances
+        const teammateDistance = Math.sqrt(
+          Math.pow(teammateFeetCenterX - leftGoaler.x, 2) +
+            Math.pow(teammateFeetCenterY - leftGoaler.y, 2)
+        );
+        const threatDistance = Math.sqrt(
+          Math.pow(threat.x - leftGoaler.x, 2) +
+            Math.pow(threat.y - leftGoaler.y, 2)
+        );
+
+        // Debug logging
+        console.log("Left Goaler has ball:", {
+          teammateDistance: Math.floor(teammateDistance),
+          threatDistance: Math.floor(threatDistance),
+          shouldPass:
+            teammateDistance < teammateCloseDistance &&
+            threatDistance > threatSafeDistance,
+          passing: this._goalerLeftPassing,
+        });
+
+        // Pass if teammate is close and threat is far
+        if (
+          teammateDistance < teammateCloseDistance &&
+          threatDistance > threatSafeDistance
+        ) {
+          console.log(
+            "STARTING PASS! stopBallAnimation:",
+            this._stopBallAnimation
+          );
+          // Shoot the ball towards teammate
+          this._goalerLeftPassing = true;
+          this._stopBallAnimation = false;
+          this.isBallRolling = true;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          // Calculate direction to teammate's feet
+          const dx = teammateFeetCenterX - this.soccerBall.x;
+          const dy = teammateFeetCenterY - this.soccerBall.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          console.log("Pass direction:", { dx, dy, distance });
+
+          // Slow rolling animation towards teammate's feet (easier to receive)
+          const ball = this.soccerBall;
+          const speed = 2.5;
+          const totalFrames = Math.floor(distance / speed);
+          let frame = 0;
+
+          const rollBall = () => {
+            console.log("Rolling frame:", frame, "/", totalFrames);
+            if (frame < totalFrames && !this._stopBallAnimation) {
+              ball.x += (dx / distance) * speed;
+              ball.y += (dy / distance) * speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 8;
+              frame++;
+              requestAnimationFrame(rollBall);
+            } else {
+              console.log("Pass animation complete");
+              ball._rollingAngle = 0;
+              this.isBallRolling = false;
+              // Keep passing flag true for 30 frames (0.5 seconds) as cooldown
+              setTimeout(() => {
+                this._goalerLeftPassing = false;
+              }, 500);
+              this._stopBallAnimation = false;
+            }
+          };
+          rollBall();
+        }
+      }
+    }
+
+    // Right goaler (red team) passing to defender
+    if (
+      this.goalersRight &&
+      this.goalersRight.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-right" &&
+      !this._goalerRightPassing
+    ) {
+      const rightGoaler = this.goalersRight[0];
+      let teammate = null;
+      const threat = this.player;
+
+      // Identify the teammate
+      if (this.currentLevel === 6 && this.defenders[0]) {
+        teammate = this.defenders[0];
+      } else if (this.currentLevel === "bot" && this.defenders[0]) {
+        teammate = this.defenders[0];
+      }
+
+      if (teammate && threat) {
+        // Get teammate's feet position for accurate targeting
+        const teammateFeet = teammate.getFeetBox();
+        const teammateFeetCenterX = teammateFeet.x + teammateFeet.width / 2;
+        const teammateFeetCenterY = teammateFeet.y + teammateFeet.height / 2;
+
+        // Calculate distances
+        const teammateDistance = Math.sqrt(
+          Math.pow(teammateFeetCenterX - rightGoaler.x, 2) +
+            Math.pow(teammateFeetCenterY - rightGoaler.y, 2)
+        );
+        const threatDistance = Math.sqrt(
+          Math.pow(threat.x - rightGoaler.x, 2) +
+            Math.pow(threat.y - rightGoaler.y, 2)
+        );
+
+        // Pass if teammate is close and threat is far
+        const threatSafeDistance = 150;
+        if (
+          teammateDistance < teammateCloseDistance &&
+          threatDistance > threatSafeDistance
+        ) {
+          // Shoot the ball towards teammate
+          this._goalerRightPassing = true;
+          this._stopBallAnimation = false;
+          this.isBallRolling = true;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          // Calculate direction to teammate's feet
+          const dx = teammateFeetCenterX - this.soccerBall.x;
+          const dy = teammateFeetCenterY - this.soccerBall.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          // Slow rolling animation towards teammate's feet (easier to receive)
+          const ball = this.soccerBall;
+          const speed = 2.5;
+          const totalFrames = Math.floor(distance / speed);
+          let frame = 0;
+
+          const rollBall = () => {
+            if (frame < totalFrames && !this._stopBallAnimation) {
+              ball.x += (dx / distance) * speed;
+              ball.y += (dy / distance) * speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 8;
+              frame++;
+              requestAnimationFrame(rollBall);
+            } else {
+              ball._rollingAngle = 0;
+              this.isBallRolling = false;
+              // Keep passing flag true for 0.5 seconds as cooldown
+              setTimeout(() => {
+                this._goalerRightPassing = false;
+              }, 500);
+              this._stopBallAnimation = false;
+            }
+          };
+          rollBall();
+        }
+      }
+    }
+  }
+
+  updateBotAI() {
+    // Only run bot AI if bot mode has been started and game is not over
+    if (!this.defenders[0] || !this.botModeStarted || this.isGameOver) return;
+
+    const bot = this.defenders[0];
+    const ball = this.soccerBall;
+    const difficulty = this.botDifficulty || "easy";
+
+    // Difficulty settings
+    let botSpeed, shootDistance;
+    if (difficulty === "impossible") {
+      botSpeed = 3.5;
+      shootDistance = 160; // Closer for better accuracy against goaler
+    } else if (difficulty === "hard") {
+      botSpeed = 3.5;
+      shootDistance = 140; // Closer for better accuracy against goaler
+    } else if (difficulty === "medium") {
+      botSpeed = 3.5;
+      shootDistance = 130;
+    } else {
+      // easy
+      botSpeed = 2.5;
+      shootDistance = 110;
+    }
+
+    // GOALER MODE: Handle opponent goaler possession (left goaler has ball)
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-left"
+    ) {
+      // Bot should retreat to give space for teammate to receive pass
+      // Move to a safe position away from the goaler and ball
+      const leftGoaler = this.goalersLeft[0];
+      const botFeet = bot.getFeetBox();
+      const botFeetCenterX = botFeet.x + botFeet.width / 2;
+      const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
+      // Retreat toward center-right area to give space
+      const retreatX = this.width * 0.6; // 60% across the field
+      const retreatY = this.height / 2; // Center height
+
+      const dx = retreatX - botFeetCenterX;
+      const dy = retreatY - botFeetCenterY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Only move if not already in retreat position
+      if (distance > 30) {
+        const moveX = (dx / distance) * botSpeed;
+        const moveY = (dy / distance) * botSpeed;
+        bot.move(moveX, moveY);
+      }
+
+      // Set timestamp when goaler starts possessing
+      if (!this._goalerLeftPossessionStart) {
+        this._goalerLeftPossessionStart = Date.now();
+      }
+      return; // Exit early - wait for pass
+    }
+
+    // GOALER MODE: Add delay after left goaler passes (wait for player to receive)
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this._goalerLeftPassing &&
+      this._goalerLeftPossessionStart
+    ) {
+      // Stay in retreat position for 2 seconds after pass starts
+      const timeSincePass = Date.now() - this._goalerLeftPossessionStart;
+      if (timeSincePass < 2000) {
+        return; // Continue waiting - give player time to receive slow pass
+      } else {
+        // Reset timestamp after delay expires
+        this._goalerLeftPossessionStart = null;
+      }
+    }
+
+    // Clear timestamp if goaler no longer has ball
+    if (
+      this.soccerBall._possessedBy !== "goaler-left" &&
+      !this._goalerLeftPassing
+    ) {
+      this._goalerLeftPossessionStart = null;
+    }
+
+    // GOALER MODE: Handle own goaler possession (right goaler has ball)
+    if (
+      this.goalersRight &&
+      this.goalersRight.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-right"
+    ) {
+      // Bot should stay close to goaler to receive the pass back quickly
+      const rightGoaler = this.goalersRight[0];
+      const botFeet = bot.getFeetBox();
+      const botFeetCenterX = botFeet.x + botFeet.width / 2;
+      const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
+      // Position near goaler but not too close (give space for pass)
+      const targetX = rightGoaler.x - 80; // Slightly in front of goaler
+      const targetY = rightGoaler.y;
+
+      const dx = targetX - botFeetCenterX;
+      const dy = targetY - botFeetCenterY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Stay in receiving position
+      if (distance > 20) {
+        const moveX = (dx / distance) * botSpeed;
+        const moveY = (dy / distance) * botSpeed;
+        bot.move(moveX, moveY);
+      }
+      return; // Exit early - wait for pass
+    }
+
+    // Get bot's feet position for accurate collision
+    const botFeet = bot.getFeetBox();
+    const botFeetCenterX = botFeet.x + botFeet.width / 2;
+    const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
+    const ballCenterX = ball.x + ball.width / 2;
+    const ballCenterY = ball.y + ball.height / 2;
+
+    // Calculate direction from bot's feet to ball
+    const dx = ballCenterX - botFeetCenterX;
+    const dy = ballCenterY - botFeetCenterY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If ball is possessed by bot, move towards goal
+    if (this.soccerBall._possessedBy === "defender") {
+      const playerCenterX = this.player.x + this.player.width / 2;
+      const playerCenterY = this.player.y + this.player.height / 2;
+      const playerDx = playerCenterX - botFeetCenterX;
+      const playerDy = playerCenterY - botFeetCenterY;
+      const playerDistance = Math.sqrt(
+        playerDx * playerDx + playerDy * playerDy
+      );
+
+      // Impossible difficulty: Defensive pass if player gets too close
+      if (
+        difficulty === "impossible" &&
+        playerDistance < 100 &&
+        !this._botShooting
+      ) {
+        // Initialize defensive pass counter
+        if (typeof this._defensivePassCount === "undefined") {
+          this._defensivePassCount = 0;
+        }
+
+        // Limit to 2 defensive passes per round
+        if (this._defensivePassCount < 2) {
+          this._defensivePassCount++;
+
+          // Bot clears the ball away from player to regain control
+          this.isBallRolling = true;
+          this._botShooting = true;
+          this.soccerBall._lastShooter = "defender"; // Track who shot the ball
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          const shootBall = this.soccerBall;
+          const spaces = 180; // Short distance pass
+          const frames = 24;
+          let shootSpeed = spaces / frames;
+          let frameCount = 0;
+
+          const game = this;
+          const shootAnimation = () => {
+            if (frameCount < frames && !game._stopBallAnimation) {
+              shootBall.x -= shootSpeed;
+              shootBall._rollingAngle =
+                (shootBall._rollingAngle || 0) + Math.PI / 10;
+              shootBall.x = Math.max(0, shootBall.x);
+              shootSpeed *= 0.97;
+              frameCount++;
+              requestAnimationFrame(shootAnimation);
+            } else {
+              shootBall._rollingAngle = 0;
+              if (shootBall.game) {
+                shootBall.game.isBallRolling = false;
+                shootBall.game._botShooting = false;
+                shootBall.game._stopBallAnimation = false;
+              }
+            }
+          };
+          shootAnimation();
+          return; // Exit early after defensive pass
+        }
+      }
+
+      // Move towards left goal (opposite side)
+      const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
+      const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
+
+      let goalDx = goalCenterX - botFeetCenterX;
+      let goalDy = goalCenterY - botFeetCenterY;
+      const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
+
+      // GOALER MODE: Smart positioning to avoid goaler blocking
+      if (
+        this.goalersLeft &&
+        this.goalersLeft.length > 0 &&
+        goalDistance < 300
+      ) {
+        const leftGoaler = this.goalersLeft[0];
+        const goalerCenterY = leftGoaler.y + leftGoaler.height / 2;
+        const goalBoxTop = this.fieldLeft.y + 49; // Goal inset
+        const goalBoxBottom = this.fieldLeft.y + this.fieldLeft.height - 49;
+
+        // When approaching goal, position to shoot at corners
+        const yDiff = botFeetCenterY - goalerCenterY;
+
+        // If too aligned with goaler (within 60px), move to aim at corners
+        if (Math.abs(yDiff) < 60 && goalDistance > shootDistance) {
+          // Move toward whichever corner is closer
+          if (botFeetCenterY < goalCenterY) {
+            // Closer to top, aim for top corner
+            goalDy = goalBoxTop + 20 - botFeetCenterY;
+          } else {
+            // Closer to bottom, aim for bottom corner
+            goalDy = goalBoxBottom - 20 - botFeetCenterY;
+          }
+        }
+      }
+
+      // Impossible difficulty: Advanced feints and jukes
+      if (difficulty === "impossible") {
+        // Initialize feint timer if not exists
+        if (!this._feintTimer) this._feintTimer = 0;
+        this._feintTimer++;
+
+        if (playerDistance < 180) {
+          // Ultra unpredictable movement with random elements
+          const time = this._feintTimer;
+          const random = Math.sin(time * 0.3) * Math.cos(time * 0.7);
+
+          // Multi-layered unpredictable pattern
+          const fastCycle = time % 8; // Very fast changes
+          const medCycle = Math.floor(time / 10) % 5;
+          const randomFactor = Math.random();
+
+          // Extremely erratic dodging
+          if (fastCycle < 2) {
+            // Rapid zigzag up
+            goalDy -= 250;
+            goalDx += 30 * random; // Add horizontal juke
+          } else if (fastCycle < 4) {
+            // Rapid zigzag down
+            goalDy += 250;
+            goalDx -= 30 * random; // Reverse horizontal juke
+          } else if (fastCycle < 6) {
+            // Fake movement based on random
+            if (randomFactor > 0.5) {
+              goalDy -= 220;
+              goalDx += 40;
+            } else {
+              goalDy += 220;
+              goalDx -= 40;
+            }
+          } else {
+            // Unpredictable diagonal movements
+            if (medCycle === 0) {
+              goalDy -= 230;
+              goalDx -= 50;
+            } else if (medCycle === 1) {
+              goalDy += 230;
+              goalDx += 50;
+            } else if (medCycle === 2) {
+              // Sudden reverse
+              goalDy += 200;
+              goalDx -= 60;
+            } else if (medCycle === 3) {
+              // Wave pattern
+              goalDy += Math.sin(time * 0.5) * 250;
+              goalDx += Math.cos(time * 0.3) * 40;
+            } else {
+              // Chaos mode
+              goalDy += (randomFactor - 0.5) * 350;
+              goalDx += (Math.random() - 0.5) * 80;
+            }
+          }
+
+          // Add even more chaos when very close
+          if (playerDistance < 100) {
+            goalDy += Math.sin(time * 1.2) * 150;
+            goalDx += Math.cos(time * 1.5) * 60;
+          }
+        }
+      }
+
+      // Hard difficulty: dodge player when moving to goal
+      if (difficulty === "hard") {
+        // If player is close (within 120 pixels), dodge them
+        if (playerDistance < 120) {
+          // Dodge perpendicular to the direction toward player
+          // If player is above bot, dodge down; if below, dodge up
+          if (playerDy < 0) {
+            // Player is above, dodge down
+            goalDy += 150;
+          } else {
+            // Player is below, dodge up
+            goalDy -= 150;
+          }
+        }
+      }
+
+      // Normalize and move (boost speed during dodge in hard mode)
+      const moveDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
+      if (moveDistance > 10) {
+        // Speed boost during dodge for hard mode
+        const dodgeSpeed =
+          difficulty === "hard" && playerDistance < 120
+            ? botSpeed * 1.3
+            : botSpeed;
+        const moveX = (goalDx / moveDistance) * dodgeSpeed;
+        const moveY = (goalDy / moveDistance) * dodgeSpeed;
+        bot.move(moveX, moveY);
+      }
+
+      // Shoot when close to goal
+      if (goalDistance < shootDistance) {
+        // Shoot logic - avoid goaler if present in goaler mode
+        if (!this._botShooting) {
+          this.isBallRolling = true;
+          this._botShooting = true;
+          this.soccerBall._lastShooter = "defender"; // Track who shot the ball
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          const shootBall = this.soccerBall;
+          const spaces = 320; // Increased shot power against goaler
+          const frames = 32;
+          let shootSpeed = spaces / frames;
+          let frameCount = 0;
+
+          // Check if goaler mode is active and goaler exists
+          let shootAngleY = 0; // Vertical angle for shot
+          if (this.goalersLeft && this.goalersLeft.length > 0) {
+            const leftGoaler = this.goalersLeft[0];
+            const goalerCenterY = leftGoaler.y + leftGoaler.height / 2;
+            const ballCenterY = shootBall.y + shootBall.height / 2;
+
+            // Simple angle away from goaler - very subtle
+            if (ballCenterY < goalerCenterY) {
+              // Ball is above goaler, aim slightly higher
+              shootAngleY = -0.15; // Subtle upward angle
+            } else {
+              // Ball is below goaler, aim slightly lower
+              shootAngleY = 0.15; // Subtle downward angle
+            }
+          }
+
+          const game = this;
+          const shootAnimation = () => {
+            // Stop animation if goal was scored or game was reset
+            if (frameCount < frames && !game._stopBallAnimation) {
+              shootBall.x -= shootSpeed; // Shoot left towards goal
+              shootBall.y += shootSpeed * shootAngleY; // Subtle angle away from goaler
+              shootBall._rollingAngle =
+                (shootBall._rollingAngle || 0) + Math.PI / 10;
+              shootBall.x = Math.max(0, shootBall.x);
+              // Keep ball in bounds vertically
+              shootBall.y = Math.max(
+                0,
+                Math.min(shootBall.y, game.height - shootBall.height)
+              );
+              shootSpeed *= 0.97;
+              frameCount++;
+              requestAnimationFrame(shootAnimation);
+            } else {
+              shootBall._rollingAngle = 0;
+              if (shootBall.game) {
+                shootBall.game.isBallRolling = false;
+                shootBall.game._botShooting = false;
+                shootBall.game._stopBallAnimation = false;
+              }
+            }
+          };
+          shootAnimation();
+        }
+      }
+    } else {
+      // Chase the ball (with interception for medium+)
+      let targetX = ballCenterX;
+      let targetY = ballCenterY;
+
+      // Medium/Hard difficulty: predict ball movement for interception
+      if (
+        (difficulty === "medium" || difficulty === "hard") &&
+        this.soccerBall._possessedBy === "player"
+      ) {
+        // If player has ball, move toward the ball (player's feet) to tackle
+        // But also consider blocking the goal path
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y + this.player.height / 2;
+        const goalCenterX = this.fieldLeft.x + this.fieldLeft.width / 2;
+        const goalCenterY = this.fieldLeft.y + this.fieldLeft.height / 2;
+
+        // Move aggressively toward the ball to tackle
+        targetX = ballCenterX;
+        targetY = ballCenterY;
+
+        // But if bot is far from ball, try to intercept path to goal
+        const botToPlayerDist = Math.sqrt(
+          (playerCenterX - botFeetCenterX) ** 2 +
+            (playerCenterY - botFeetCenterY) ** 2
+        );
+
+        const interceptThreshold = difficulty === "hard" ? 180 : 150;
+        if (botToPlayerDist > interceptThreshold) {
+          // Intercept point between player and goal
+          const interceptRatio = difficulty === "hard" ? 0.4 : 0.3;
+          targetX =
+            playerCenterX + (goalCenterX - playerCenterX) * interceptRatio;
+          targetY =
+            playerCenterY + (goalCenterY - playerCenterY) * interceptRatio;
+        }
+      }
+
+      const targetDx = targetX - botFeetCenterX;
+      const targetDy = targetY - botFeetCenterY;
+      const targetDistance = Math.sqrt(
+        targetDx * targetDx + targetDy * targetDy
+      );
+
+      if (targetDistance > 5) {
+        const moveX = (targetDx / targetDistance) * botSpeed;
+        const moveY = (targetDy / targetDistance) * botSpeed;
+        bot.move(moveX, moveY);
       }
     }
   }
@@ -821,7 +2497,13 @@ function startGame() {
     // Helper function to highlight code
     function highlightCode(code) {
       let escaped = escapeHtml(code);
-      const functions = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+      const functions = [
+        "moveRight",
+        "moveLeft",
+        "moveUp",
+        "moveDown",
+        "shootBall",
+      ];
       functions.forEach((fn) => {
         const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
         escaped = escaped.replace(
@@ -901,7 +2583,7 @@ function startGame() {
 
         // Get plain text to calculate position
         const plainText = editor.innerText || editor.textContent;
-        
+
         // Calculate caret position by walking through text nodes
         let caretPos = 0;
         const walker = document.createTreeWalker(
@@ -909,7 +2591,7 @@ function startGame() {
           NodeFilter.SHOW_TEXT,
           null
         );
-        
+
         let node;
         let found = false;
         while ((node = walker.nextNode())) {
@@ -921,7 +2603,7 @@ function startGame() {
             caretPos += node.textContent.length;
           }
         }
-        
+
         // If we didn't find the node, use fallback calculation
         if (!found) {
           const preCaretRange = range.cloneRange();
@@ -947,20 +2629,23 @@ function startGame() {
               NodeFilter.SHOW_TEXT,
               null
             );
-            
+
             let currentPos = 0;
             let node2;
             while ((node2 = walker2.nextNode())) {
               const text = node2.textContent;
               const nodeLength = text.length;
-              
+
               // Check if the newline is in this node
-              if (currentPos <= caretPos && caretPos < currentPos + nodeLength) {
+              if (
+                currentPos <= caretPos &&
+                caretPos < currentPos + nodeLength
+              ) {
                 const localPos = caretPos - currentPos;
                 // Check if there's a newline at or before this position
                 const textBefore = text.substring(0, localPos);
-                const newlineIndex = textBefore.lastIndexOf('\n');
-                
+                const newlineIndex = textBefore.lastIndexOf("\n");
+
                 if (newlineIndex !== -1) {
                   // Position cursor after the newline
                   const range = document.createRange();
@@ -972,10 +2657,10 @@ function startGame() {
                   return;
                 }
               }
-              
+
               currentPos += nodeLength;
             }
-            
+
             // Fallback: use setCaret function
             setCaret(editor, caretPos + 1);
           } catch (err) {

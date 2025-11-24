@@ -165,14 +165,11 @@ function updateLevelButtons() {
   const currentGame = window.currentGame;
 
   if (currentGame) {
-    backBtn.disabled = currentGame.currentLevel === 1;
-    const dropdown = document.getElementById("level-dropdown");
-    const selectedValue = dropdown.value;
-    if (selectedValue === "6" || selectedValue === "bot") {
-      nextBtn.disabled = true;
-    } else {
-      nextBtn.disabled = false;
-    }
+    const level = currentGame.currentLevel;
+    // Disable back button on level 1
+    backBtn.disabled = level === 1;
+    // Disable next button only on 1v1 mode (the last level)
+    nextBtn.disabled = level === 6;
   }
 }
 
@@ -393,10 +390,23 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("next-level-btn").addEventListener("click", () => {
     showAllGameButtons();
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel < 5) {
-      currentGame.loadLevel(currentGame.currentLevel + 1);
-      document.getElementById("level-dropdown").value =
-        currentGame.currentLevel;
+    if (!currentGame) return;
+
+    let nextLevel;
+    if (typeof currentGame.currentLevel === "number") {
+      if (currentGame.currentLevel < 5) {
+        nextLevel = currentGame.currentLevel + 1;
+      } else if (currentGame.currentLevel === 5) {
+        nextLevel = "bot";
+      }
+    } else if (currentGame.currentLevel === "bot") {
+      nextLevel = 6;
+    }
+
+    if (nextLevel !== undefined) {
+      currentGame.removeGoalers();
+      currentGame.loadLevel(nextLevel);
+      document.getElementById("level-dropdown").value = nextLevel;
       currentGame.player.reset();
       if (currentGame.soccerBall) {
         currentGame._goalPopupShown = false;
@@ -407,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      updateUIForLevel(currentGame.currentLevel);
+      updateUIForLevel(nextLevel);
       updateLevelButtons();
     }
   });
@@ -415,10 +425,24 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("back-level-btn").addEventListener("click", () => {
     showAllGameButtons();
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel > 1) {
-      currentGame.loadLevel(currentGame.currentLevel - 1);
-      document.getElementById("level-dropdown").value =
-        currentGame.currentLevel;
+    if (!currentGame) return;
+
+    let prevLevel;
+    if (currentGame.currentLevel === 6) {
+      prevLevel = "bot";
+    } else if (currentGame.currentLevel === "bot") {
+      prevLevel = 5;
+    } else if (
+      typeof currentGame.currentLevel === "number" &&
+      currentGame.currentLevel > 1
+    ) {
+      prevLevel = currentGame.currentLevel - 1;
+    }
+
+    if (prevLevel !== undefined) {
+      currentGame.removeGoalers();
+      currentGame.loadLevel(prevLevel);
+      document.getElementById("level-dropdown").value = prevLevel;
       currentGame.player.reset();
       if (currentGame.soccerBall) {
         currentGame._goalPopupShown = false;
@@ -429,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         currentGame._ballHasMoved = false;
       }
-      updateUIForLevel(currentGame.currentLevel);
+      updateUIForLevel(prevLevel);
       updateLevelButtons();
     }
   });
@@ -444,6 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const currentGame = window.currentGame;
     if (currentGame) {
+      currentGame.removeGoalers();
       currentGame.loadLevel(selectedLevel);
       currentGame.player.reset();
       if (currentGame.soccerBall) {
@@ -531,6 +556,35 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  // Goalers buttons for bot mode
+  const goalersButtonsContainer = document.querySelector(".goalers-buttons");
+  if (goalersButtonsContainer) {
+    const goalersButtons =
+      goalersButtonsContainer.querySelectorAll(".difficulty-btn");
+    const goalersOffBtn = document.getElementById("goalers-off-btn");
+    const goalersOnBtn = document.getElementById("goalers-on-btn");
+
+    goalersButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        goalersButtons.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+
+        // Add or remove goalers based on selection
+        if (window.currentGame) {
+          if (btn === goalersOnBtn) {
+            window.currentGame.addGoalers();
+          } else {
+            window.currentGame.removeGoalers();
+          }
+        }
+      });
+    });
+  }
+
   // Start button
   const startBtn = document.querySelector(".start-btn");
   if (startBtn) {
@@ -578,17 +632,175 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (window.currentGame && window.currentGame.currentLevel === "bot") {
         window.currentGame.botModeStarted = true;
+        // Store the selected difficulty
+        const selectedDifficultyBtn = Array.from(
+          difficultyGrid.querySelectorAll(".difficulty-btn")
+        ).find((btn) => btn.classList.contains("selected"));
+        if (selectedDifficultyBtn) {
+          const difficultyText =
+            selectedDifficultyBtn.textContent.toLowerCase();
+          window.currentGame.botDifficulty = difficultyText;
+        }
       }
 
       hideStartUI();
+
+      // Store the mode button globally for play again functionality
+      window._currentModeBtn = modeSelectedBtn;
+
       setupGameMode(modeSelectedBtn);
+    });
+  }
+
+  // Mode button selection for 1v1
+  const modeButtonsContainer1v1 = document.querySelector(".mode-buttons-1v1");
+  if (modeButtonsContainer1v1) {
+    const modeButtons1v1 =
+      modeButtonsContainer1v1.querySelectorAll(".difficulty-btn");
+    const timedBtn1v1 = document.getElementById("timed-btn-1v1");
+    const timedInputContainer1v1 = document.getElementById(
+      "timed-input-container-1v1"
+    );
+    const toscoreBtn1v1 = document.getElementById("toscore-btn-1v1");
+    const toscoreInputContainer1v1 = document.getElementById(
+      "toscore-input-container-1v1"
+    );
+    const freeplayBtn1v1 = document.getElementById("freeplay-btn-1v1");
+    const freeplayMessage1v1 = document.getElementById("freeplay-message-1v1");
+
+    modeButtons1v1.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        modeButtons1v1.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+
+        if (btn === timedBtn1v1) {
+          if (timedInputContainer1v1)
+            timedInputContainer1v1.style.display = "block";
+          if (toscoreInputContainer1v1)
+            toscoreInputContainer1v1.style.display = "none";
+          if (freeplayMessage1v1) freeplayMessage1v1.style.display = "none";
+        } else if (btn === toscoreBtn1v1) {
+          if (timedInputContainer1v1)
+            timedInputContainer1v1.style.display = "none";
+          if (toscoreInputContainer1v1)
+            toscoreInputContainer1v1.style.display = "block";
+          if (freeplayMessage1v1) freeplayMessage1v1.style.display = "none";
+        } else if (btn === freeplayBtn1v1) {
+          if (timedInputContainer1v1)
+            timedInputContainer1v1.style.display = "none";
+          if (toscoreInputContainer1v1)
+            toscoreInputContainer1v1.style.display = "none";
+          if (freeplayMessage1v1) freeplayMessage1v1.style.display = "block";
+        } else {
+          if (timedInputContainer1v1)
+            timedInputContainer1v1.style.display = "none";
+          if (toscoreInputContainer1v1)
+            toscoreInputContainer1v1.style.display = "none";
+          if (freeplayMessage1v1) freeplayMessage1v1.style.display = "none";
+        }
+      });
+    });
+  }
+
+  // Goalers buttons for 1v1
+  const goalersButtonsContainer1v1 = document.querySelector(
+    ".goalers-buttons-1v1"
+  );
+  if (goalersButtonsContainer1v1) {
+    const goalersButtons1v1 =
+      goalersButtonsContainer1v1.querySelectorAll(".difficulty-btn");
+    const goalersOffBtn1v1 = document.getElementById("goalers-off-btn-1v1");
+    const goalersOnBtn1v1 = document.getElementById("goalers-on-btn-1v1");
+
+    goalersButtons1v1.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        goalersButtons1v1.forEach((b) => {
+          b.classList.remove("selected");
+          b.disabled = false;
+        });
+        btn.classList.add("selected");
+        btn.disabled = true;
+
+        // Add or remove goalers based on selection
+        if (window.currentGame) {
+          if (btn === goalersOnBtn1v1) {
+            window.currentGame.addGoalers();
+          } else {
+            window.currentGame.removeGoalers();
+          }
+        }
+      });
+    });
+  }
+
+  // Start button for 1v1
+  const start1v1Btn = document.getElementById("start-btn-1v1");
+  if (start1v1Btn) {
+    start1v1Btn.addEventListener("click", () => {
+      const modeButtons1v1 = document.querySelector(".mode-buttons-1v1");
+      const modeSelectedBtn1v1 =
+        modeButtons1v1 &&
+        Array.from(modeButtons1v1.querySelectorAll(".difficulty-btn")).find(
+          (btn) => btn.classList.contains("selected")
+        );
+
+      let validInput = true;
+      if (modeSelectedBtn1v1 && modeSelectedBtn1v1.id === "timed-btn-1v1") {
+        const timedInput = document.getElementById("timed-minutes-1v1");
+        const timedVal =
+          timedInput && timedInput.value ? parseInt(timedInput.value) : 0;
+        validInput = timedInput && timedVal >= 1 && timedVal <= 20;
+        if (timedInput && (timedVal < 1 || timedVal > 20)) {
+          showPopup("Please choose a time between 1 and 20 minutes.");
+          return;
+        }
+      } else if (
+        modeSelectedBtn1v1 &&
+        modeSelectedBtn1v1.id === "toscore-btn-1v1"
+      ) {
+        const scoreInput = document.getElementById("toscore-score-1v1");
+        const scoreVal =
+          scoreInput && scoreInput.value ? parseInt(scoreInput.value) : 0;
+        validInput = scoreInput && scoreVal >= 1 && scoreVal <= 100;
+        if (scoreInput && (scoreVal < 1 || scoreVal > 100)) {
+          showPopup("Please choose a score between 1 and 100.");
+          return;
+        }
+      }
+
+      if (!modeSelectedBtn1v1 || !validInput) {
+        showPopup("Please select a game mode and enter a value if required.");
+        return;
+      }
+
+      if (window.currentGame && window.currentGame.currentLevel === 6) {
+        window.currentGame.mode1v1Started = true;
+        // Initialize scores to 0
+        window.currentGame.playerScore = 0;
+        window.currentGame.defenderScore = 0;
+      }
+
+      hide1v1StartUI();
+
+      // Store the mode button globally for play again functionality
+      window._currentModeBtn1v1 = modeSelectedBtn1v1;
+
+      setupGameMode1v1(modeSelectedBtn1v1);
     });
   }
 
   // Keyboard controls for 1v1 and bot mode
   window.addEventListener("keydown", (e) => {
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel === 6) {
+    if (
+      currentGame &&
+      currentGame.currentLevel === 6 &&
+      currentGame.mode1v1Started
+    ) {
       currentGame.handleDefenderControls(e);
       e.preventDefault();
     }
@@ -604,7 +816,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.addEventListener("keyup", (e) => {
     const currentGame = window.currentGame;
-    if (currentGame && currentGame.currentLevel === 6) {
+    if (
+      currentGame &&
+      currentGame.currentLevel === 6 &&
+      currentGame.mode1v1Started
+    ) {
       currentGame.handleDefenderControls(e);
       e.preventDefault();
     }
@@ -617,6 +833,30 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
     }
   });
+
+  // End game button for freeplay mode
+  const endGameBtn = document.getElementById("end-game-btn");
+  if (endGameBtn) {
+    endGameBtn.addEventListener("click", () => {
+      const currentGame = window.currentGame;
+      if (!currentGame) return;
+
+      // Get the time played
+      const freeplayTimerValue = document.getElementById(
+        "freeplay-timer-value"
+      );
+      const timePlayed = freeplayTimerValue
+        ? freeplayTimerValue.textContent
+        : "0:00";
+
+      // Determine which mode we're in
+      if (currentGame.currentLevel === "bot") {
+        currentGame.showFreeplayEndPopup(timePlayed);
+      } else if (currentGame.currentLevel === 6) {
+        currentGame.showFreeplayEndPopup1v1(timePlayed);
+      }
+    });
+  }
 
   window.setCurrentGame = (game) => {
     window.currentGame = game;
@@ -633,12 +873,12 @@ function updateUIForLevel(level) {
   const scoreboard = document.getElementById("scoreboard");
   const runBtn = document.getElementById("run-btn");
   const clearBtn = document.getElementById("clear-btn");
-  const start1v1Btn = document.getElementById("start-1v1-btn");
   const difficultyButtons = document.querySelector(".difficulty-buttons");
+  const mode1v1Buttons = document.getElementById("mode-1v1-buttons");
 
   if (level === "bot") {
     if (difficultyButtons) difficultyButtons.style.display = "flex";
-    if (start1v1Btn) start1v1Btn.style.display = "none";
+    if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
     editor.style.display = "none";
     editor.contentEditable = "false";
     editor.classList.remove("enabled");
@@ -648,12 +888,12 @@ function updateUIForLevel(level) {
     if (clearBtn) clearBtn.style.display = "none";
   } else if (level === 6) {
     if (difficultyButtons) difficultyButtons.style.display = "none";
-    if (window._scoreboardStarted1v1) {
+    if (window.currentGame && window.currentGame.mode1v1Started) {
+      if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
       if (scoreboard) scoreboard.style.display = "block";
-      if (start1v1Btn) start1v1Btn.style.display = "none";
     } else {
+      if (mode1v1Buttons) mode1v1Buttons.style.display = "flex";
       if (scoreboard) scoreboard.style.display = "none";
-      if (start1v1Btn) start1v1Btn.style.display = "block";
     }
     editor.style.display = "none";
     editor.contentEditable = "false";
@@ -663,7 +903,7 @@ function updateUIForLevel(level) {
     if (clearBtn) clearBtn.style.display = "none";
   } else {
     if (difficultyButtons) difficultyButtons.style.display = "none";
-    if (start1v1Btn) start1v1Btn.style.display = "none";
+    if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
     editor.style.display = "block";
     editor.contentEditable = "true";
     editor.classList.add("enabled");
@@ -693,6 +933,138 @@ function showPopup(message) {
     document.body.appendChild(popup);
     document.getElementById("close-select-popup").onclick = () =>
       popup.remove();
+  }
+}
+
+function hide1v1StartUI() {
+  const mode1v1Buttons = document.getElementById("mode-1v1-buttons");
+  if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
+}
+
+function show1v1StartUI() {
+  const mode1v1Buttons = document.getElementById("mode-1v1-buttons");
+  const timedInputContainer1v1 = document.getElementById(
+    "timed-input-container-1v1"
+  );
+  const toscoreInputContainer1v1 = document.getElementById(
+    "toscore-input-container-1v1"
+  );
+  const freeplayMessage1v1 = document.getElementById("freeplay-message-1v1");
+
+  if (mode1v1Buttons) mode1v1Buttons.style.display = "flex";
+  if (timedInputContainer1v1) timedInputContainer1v1.style.display = "none";
+  if (toscoreInputContainer1v1) toscoreInputContainer1v1.style.display = "none";
+  if (freeplayMessage1v1) freeplayMessage1v1.style.display = "none";
+
+  // Unselect all mode buttons
+  const modeButtons1v1 = document.querySelector(".mode-buttons-1v1");
+  if (modeButtons1v1) {
+    const modeBtns = modeButtons1v1.querySelectorAll(".difficulty-btn");
+    modeBtns.forEach((btn) => {
+      btn.classList.remove("selected");
+      btn.disabled = false;
+    });
+  }
+
+  // Clear input fields
+  const timedInput = document.getElementById("timed-minutes-1v1");
+  const scoreInput = document.getElementById("toscore-score-1v1");
+  if (timedInput) timedInput.value = "";
+  if (scoreInput) scoreInput.value = "";
+
+  // Hide scoreboard
+  const scoreboard = document.getElementById("scoreboard");
+  if (scoreboard) scoreboard.style.display = "none";
+}
+
+function setupGameMode1v1(modeSelectedBtn) {
+  // Store globally for restart functionality
+  window._currentModeBtn1v1 = modeSelectedBtn;
+
+  const scoreboard = document.getElementById("scoreboard");
+  const scorePlayer = document.getElementById("score-player");
+  const scoreDefender = document.getElementById("score-defender");
+
+  if (scoreboard) scoreboard.style.display = "block";
+  if (scorePlayer) scorePlayer.textContent = "0";
+  if (scoreDefender) scoreDefender.textContent = "0";
+  window._lastScoreMessage = null;
+
+  const targetScoreContainer = document.getElementById("targetscore-container");
+  const targetScoreValue = document.getElementById("targetscore-value");
+  const timerContainer = document.getElementById("timer-container");
+  const timerValue = document.getElementById("timer-value");
+  const freeplayTimerContainer = document.getElementById(
+    "freeplay-timer-container"
+  );
+  const freeplayTimerValue = document.getElementById("freeplay-timer-value");
+  const endGameBtn = document.getElementById("end-game-btn");
+
+  if (modeSelectedBtn && modeSelectedBtn.id === "toscore-btn-1v1") {
+    const scoreInput = document.getElementById("toscore-score-1v1");
+    const targetScore =
+      scoreInput && scoreInput.value ? parseInt(scoreInput.value) : 0;
+    if (targetScoreContainer && targetScoreValue) {
+      targetScoreContainer.style.display = "block";
+      targetScoreValue.textContent = targetScore;
+      window._targetScore = targetScore;
+    }
+  } else if (targetScoreContainer) {
+    targetScoreContainer.style.display = "none";
+    window._targetScore = undefined;
+  }
+
+  if (modeSelectedBtn && modeSelectedBtn.id === "freeplay-btn-1v1") {
+    if (freeplayTimerContainer && freeplayTimerValue) {
+      let secondsElapsed = 0;
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s.toString().padStart(2, "0")}`;
+      }
+      freeplayTimerContainer.style.display = "block";
+      freeplayTimerValue.textContent = formatTime(secondsElapsed);
+      if (window._freeplayTimerInterval)
+        clearInterval(window._freeplayTimerInterval);
+      window._freeplayTimerInterval = setInterval(() => {
+        secondsElapsed++;
+        freeplayTimerValue.textContent = formatTime(secondsElapsed);
+      }, 1000);
+    }
+    if (endGameBtn) endGameBtn.style.display = "block";
+  } else {
+    if (freeplayTimerContainer) {
+      freeplayTimerContainer.style.display = "none";
+      if (window._freeplayTimerInterval)
+        clearInterval(window._freeplayTimerInterval);
+    }
+    if (endGameBtn) endGameBtn.style.display = "none";
+  }
+
+  if (modeSelectedBtn && modeSelectedBtn.id === "timed-btn-1v1") {
+    if (timerContainer && timerValue) {
+      const timedInput = document.getElementById("timed-minutes-1v1");
+      let secondsLeft = parseInt(timedInput.value, 10) * 60;
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s.toString().padStart(2, "0")}`;
+      }
+      timerContainer.style.display = "block";
+      timerValue.textContent = formatTime(secondsLeft);
+      if (window._timerInterval) clearInterval(window._timerInterval);
+      window._timerInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft < 0) {
+          clearInterval(window._timerInterval);
+          timerValue.textContent = "0:00";
+          return;
+        }
+        timerValue.textContent = formatTime(secondsLeft);
+      }, 1000);
+    }
+  } else if (timerContainer) {
+    timerContainer.style.display = "none";
   }
 }
 
@@ -731,7 +1103,73 @@ function hideStartUI() {
   }
 }
 
+function showStartUI() {
+  const difficultyGrid = document.querySelector(".difficulty-grid");
+  const modeButtons = document.querySelector(".mode-buttons");
+  const timedInputContainer = document.getElementById("timed-input-container");
+  const toscoreInputContainer = document.getElementById(
+    "toscore-input-container"
+  );
+  const freeplayMessage = document.getElementById("freeplay-message");
+  const startBtn = document.querySelector(".start-btn");
+
+  if (difficultyGrid) difficultyGrid.style.display = "grid";
+  if (modeButtons) modeButtons.style.display = "flex";
+  if (timedInputContainer) timedInputContainer.style.display = "none";
+  if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
+  if (freeplayMessage) freeplayMessage.style.display = "none";
+  if (startBtn) startBtn.style.display = "block";
+
+  if (
+    difficultyGrid &&
+    difficultyGrid.previousElementSibling &&
+    difficultyGrid.previousElementSibling.textContent.includes(
+      "Select Difficulty"
+    )
+  ) {
+    difficultyGrid.previousElementSibling.style.display = "block";
+  }
+  if (
+    modeButtons &&
+    modeButtons.previousElementSibling &&
+    modeButtons.previousElementSibling.textContent.includes("Select Game Mode")
+  ) {
+    modeButtons.previousElementSibling.style.display = "block";
+  }
+
+  // Unselect all difficulty buttons
+  if (difficultyGrid) {
+    const difficultyBtns = difficultyGrid.querySelectorAll(".difficulty-btn");
+    difficultyBtns.forEach((btn) => {
+      btn.classList.remove("selected");
+      btn.disabled = false;
+    });
+  }
+
+  // Unselect all mode buttons
+  if (modeButtons) {
+    const modeBtns = modeButtons.querySelectorAll(".difficulty-btn");
+    modeBtns.forEach((btn) => {
+      btn.classList.remove("selected");
+      btn.disabled = false;
+    });
+  }
+
+  // Clear input fields
+  const timedInput = document.getElementById("timed-minutes");
+  const scoreInput = document.getElementById("toscore-score");
+  if (timedInput) timedInput.value = "";
+  if (scoreInput) scoreInput.value = "";
+
+  // Hide scoreboard
+  const scoreboard = document.getElementById("scoreboard");
+  if (scoreboard) scoreboard.style.display = "none";
+}
+
 function setupGameMode(modeSelectedBtn) {
+  // Store globally for restart functionality
+  window._currentModeBtn = modeSelectedBtn;
+
   const scoreboard = document.getElementById("scoreboard");
   const scorePlayer = document.getElementById("score-player");
   const scoreDefender = document.getElementById("score-defender");
@@ -749,6 +1187,7 @@ function setupGameMode(modeSelectedBtn) {
     "freeplay-timer-container"
   );
   const freeplayTimerValue = document.getElementById("freeplay-timer-value");
+  const endGameBtn = document.getElementById("end-game-btn");
 
   if (modeSelectedBtn && modeSelectedBtn.id === "toscore-btn") {
     const scoreInput = document.getElementById("toscore-score");
@@ -781,10 +1220,14 @@ function setupGameMode(modeSelectedBtn) {
         freeplayTimerValue.textContent = formatTime(secondsElapsed);
       }, 1000);
     }
-  } else if (freeplayTimerContainer) {
-    freeplayTimerContainer.style.display = "none";
-    if (window._freeplayTimerInterval)
-      clearInterval(window._freeplayTimerInterval);
+    if (endGameBtn) endGameBtn.style.display = "block";
+  } else {
+    if (freeplayTimerContainer) {
+      freeplayTimerContainer.style.display = "none";
+      if (window._freeplayTimerInterval)
+        clearInterval(window._freeplayTimerInterval);
+    }
+    if (endGameBtn) endGameBtn.style.display = "none";
   }
 
   if (modeSelectedBtn && modeSelectedBtn.id === "timed-btn") {
@@ -813,3 +1256,9 @@ function setupGameMode(modeSelectedBtn) {
     timerContainer.style.display = "none";
   }
 }
+
+// Make functions accessible globally
+window.setupGameMode = setupGameMode;
+window.showStartUI = showStartUI;
+window.setupGameMode1v1 = setupGameMode1v1;
+window.show1v1StartUI = show1v1StartUI;
