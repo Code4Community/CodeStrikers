@@ -1692,7 +1692,7 @@ class Game {
     // Only update goalers if they are enabled and game is active
     if (!this.goalersEnabled || this.isGameOver) return;
 
-    const goalerSpeed = 5;
+    const goalerSpeed = 4; // Slightly slower to give bot better chance
     const activationDistance = 250; // Distance at which goaler starts tracking
     const alignmentDeadzone = 5; // Stop moving when within this many pixels of target Y
 
@@ -1700,6 +1700,15 @@ class Game {
     if (this.goalersLeft && this.goalersLeft.length > 0) {
       const leftGoaler = this.goalersLeft[0];
       let threat = null;
+
+      // Calculate goal box bounds
+      const goalInset = 49;
+      const goalBoxMinY = this.fieldLeft.y + goalInset;
+      const goalBoxMaxY =
+        this.fieldLeft.y +
+        this.fieldLeft.height -
+        goalInset -
+        leftGoaler.height;
 
       // In 1v1 mode, defend against the red player (defender)
       if (this.currentLevel === 6 && this.defenders[0]) {
@@ -1721,14 +1730,11 @@ class Game {
           const yDiff = Math.abs(threat.y - leftGoaler.y);
           // Only move if not already aligned (deadzone prevents jittering)
           if (yDiff > alignmentDeadzone) {
-            // Move towards threat's Y position to block
+            // Move towards threat's Y position to block, but stay within goal box
             if (threat.y < leftGoaler.y) {
-              leftGoaler.y = Math.max(0, leftGoaler.y - goalerSpeed);
+              leftGoaler.y = Math.max(goalBoxMinY, leftGoaler.y - goalerSpeed);
             } else if (threat.y > leftGoaler.y) {
-              leftGoaler.y = Math.min(
-                this.height - leftGoaler.height,
-                leftGoaler.y + goalerSpeed
-              );
+              leftGoaler.y = Math.min(goalBoxMaxY, leftGoaler.y + goalerSpeed);
             }
           }
         }
@@ -1739,6 +1745,15 @@ class Game {
     if (this.goalersRight && this.goalersRight.length > 0) {
       const rightGoaler = this.goalersRight[0];
       let threat = null;
+
+      // Calculate goal box bounds
+      const goalInset = 49;
+      const goalBoxMinY = this.fieldRight.y + goalInset;
+      const goalBoxMaxY =
+        this.fieldRight.y +
+        this.fieldRight.height -
+        goalInset -
+        rightGoaler.height;
 
       // Defend against the main player (blue)
       threat = this.player;
@@ -1754,12 +1769,15 @@ class Game {
           const yDiff = Math.abs(threat.y - rightGoaler.y);
           // Only move if not already aligned (deadzone prevents jittering)
           if (yDiff > alignmentDeadzone) {
-            // Move towards threat's Y position to block
+            // Move towards threat's Y position to block, but stay within goal box
             if (threat.y < rightGoaler.y) {
-              rightGoaler.y = Math.max(0, rightGoaler.y - goalerSpeed);
+              rightGoaler.y = Math.max(
+                goalBoxMinY,
+                rightGoaler.y - goalerSpeed
+              );
             } else if (threat.y > rightGoaler.y) {
               rightGoaler.y = Math.min(
-                this.height - rightGoaler.height,
+                goalBoxMaxY,
                 rightGoaler.y + goalerSpeed
               );
             }
@@ -1962,17 +1980,106 @@ class Game {
     let botSpeed, shootDistance;
     if (difficulty === "impossible") {
       botSpeed = 3.5;
-      shootDistance = 200;
+      shootDistance = 160; // Closer for better accuracy against goaler
     } else if (difficulty === "hard") {
       botSpeed = 3.5;
-      shootDistance = 180;
+      shootDistance = 140; // Closer for better accuracy against goaler
     } else if (difficulty === "medium") {
       botSpeed = 3.5;
-      shootDistance = 150;
+      shootDistance = 130;
     } else {
       // easy
       botSpeed = 2.5;
-      shootDistance = 120;
+      shootDistance = 110;
+    }
+
+    // GOALER MODE: Handle opponent goaler possession (left goaler has ball)
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-left"
+    ) {
+      // Bot should retreat to give space for teammate to receive pass
+      // Move to a safe position away from the goaler and ball
+      const leftGoaler = this.goalersLeft[0];
+      const botFeet = bot.getFeetBox();
+      const botFeetCenterX = botFeet.x + botFeet.width / 2;
+      const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
+      // Retreat toward center-right area to give space
+      const retreatX = this.width * 0.6; // 60% across the field
+      const retreatY = this.height / 2; // Center height
+
+      const dx = retreatX - botFeetCenterX;
+      const dy = retreatY - botFeetCenterY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Only move if not already in retreat position
+      if (distance > 30) {
+        const moveX = (dx / distance) * botSpeed;
+        const moveY = (dy / distance) * botSpeed;
+        bot.move(moveX, moveY);
+      }
+
+      // Set timestamp when goaler starts possessing
+      if (!this._goalerLeftPossessionStart) {
+        this._goalerLeftPossessionStart = Date.now();
+      }
+      return; // Exit early - wait for pass
+    }
+
+    // GOALER MODE: Add delay after left goaler passes (wait for player to receive)
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this._goalerLeftPassing &&
+      this._goalerLeftPossessionStart
+    ) {
+      // Stay in retreat position for 2 seconds after pass starts
+      const timeSincePass = Date.now() - this._goalerLeftPossessionStart;
+      if (timeSincePass < 2000) {
+        return; // Continue waiting - give player time to receive slow pass
+      } else {
+        // Reset timestamp after delay expires
+        this._goalerLeftPossessionStart = null;
+      }
+    }
+
+    // Clear timestamp if goaler no longer has ball
+    if (
+      this.soccerBall._possessedBy !== "goaler-left" &&
+      !this._goalerLeftPassing
+    ) {
+      this._goalerLeftPossessionStart = null;
+    }
+
+    // GOALER MODE: Handle own goaler possession (right goaler has ball)
+    if (
+      this.goalersRight &&
+      this.goalersRight.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-right"
+    ) {
+      // Bot should stay close to goaler to receive the pass back quickly
+      const rightGoaler = this.goalersRight[0];
+      const botFeet = bot.getFeetBox();
+      const botFeetCenterX = botFeet.x + botFeet.width / 2;
+      const botFeetCenterY = botFeet.y + botFeet.height / 2;
+
+      // Position near goaler but not too close (give space for pass)
+      const targetX = rightGoaler.x - 80; // Slightly in front of goaler
+      const targetY = rightGoaler.y;
+
+      const dx = targetX - botFeetCenterX;
+      const dy = targetY - botFeetCenterY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Stay in receiving position
+      if (distance > 20) {
+        const moveX = (dx / distance) * botSpeed;
+        const moveY = (dy / distance) * botSpeed;
+        bot.move(moveX, moveY);
+      }
+      return; // Exit early - wait for pass
     }
 
     // Get bot's feet position for accurate collision
@@ -2057,6 +2164,33 @@ class Game {
       let goalDx = goalCenterX - botFeetCenterX;
       let goalDy = goalCenterY - botFeetCenterY;
       const goalDistance = Math.sqrt(goalDx * goalDx + goalDy * goalDy);
+
+      // GOALER MODE: Smart positioning to avoid goaler blocking
+      if (
+        this.goalersLeft &&
+        this.goalersLeft.length > 0 &&
+        goalDistance < 300
+      ) {
+        const leftGoaler = this.goalersLeft[0];
+        const goalerCenterY = leftGoaler.y + leftGoaler.height / 2;
+        const goalBoxTop = this.fieldLeft.y + 49; // Goal inset
+        const goalBoxBottom = this.fieldLeft.y + this.fieldLeft.height - 49;
+
+        // When approaching goal, position to shoot at corners
+        const yDiff = botFeetCenterY - goalerCenterY;
+
+        // If too aligned with goaler (within 60px), move to aim at corners
+        if (Math.abs(yDiff) < 60 && goalDistance > shootDistance) {
+          // Move toward whichever corner is closer
+          if (botFeetCenterY < goalCenterY) {
+            // Closer to top, aim for top corner
+            goalDy = goalBoxTop + 20 - botFeetCenterY;
+          } else {
+            // Closer to bottom, aim for bottom corner
+            goalDy = goalBoxBottom - 20 - botFeetCenterY;
+          }
+        }
+      }
 
       // Impossible difficulty: Advanced feints and jukes
       if (difficulty === "impossible") {
@@ -2154,7 +2288,7 @@ class Game {
 
       // Shoot when close to goal
       if (goalDistance < shootDistance) {
-        // Shoot logic similar to player
+        // Shoot logic - avoid goaler if present in goaler mode
         if (!this._botShooting) {
           this.isBallRolling = true;
           this._botShooting = true;
@@ -2163,19 +2297,42 @@ class Game {
           this.soccerBall._possessedBy = undefined;
 
           const shootBall = this.soccerBall;
-          const spaces = 250; // Distance to shoot
+          const spaces = 320; // Increased shot power against goaler
           const frames = 32;
           let shootSpeed = spaces / frames;
           let frameCount = 0;
+
+          // Check if goaler mode is active and goaler exists
+          let shootAngleY = 0; // Vertical angle for shot
+          if (this.goalersLeft && this.goalersLeft.length > 0) {
+            const leftGoaler = this.goalersLeft[0];
+            const goalerCenterY = leftGoaler.y + leftGoaler.height / 2;
+            const ballCenterY = shootBall.y + shootBall.height / 2;
+
+            // Simple angle away from goaler - very subtle
+            if (ballCenterY < goalerCenterY) {
+              // Ball is above goaler, aim slightly higher
+              shootAngleY = -0.15; // Subtle upward angle
+            } else {
+              // Ball is below goaler, aim slightly lower
+              shootAngleY = 0.15; // Subtle downward angle
+            }
+          }
 
           const game = this;
           const shootAnimation = () => {
             // Stop animation if goal was scored or game was reset
             if (frameCount < frames && !game._stopBallAnimation) {
               shootBall.x -= shootSpeed; // Shoot left towards goal
+              shootBall.y += shootSpeed * shootAngleY; // Subtle angle away from goaler
               shootBall._rollingAngle =
                 (shootBall._rollingAngle || 0) + Math.PI / 10;
               shootBall.x = Math.max(0, shootBall.x);
+              // Keep ball in bounds vertically
+              shootBall.y = Math.max(
+                0,
+                Math.min(shootBall.y, game.height - shootBall.height)
+              );
               shootSpeed *= 0.97;
               frameCount++;
               requestAnimationFrame(shootAnimation);
