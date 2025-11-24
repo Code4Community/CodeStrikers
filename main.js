@@ -567,6 +567,63 @@ class Game {
       this.soccerBall._possessedBy = undefined;
     }
 
+    // Goaler collision detection - ball sticks to any part of goaler's body
+    // Skip collision if a goaler is actively passing (with cooldown)
+    if (
+      this.goalersEnabled &&
+      !this.soccerBall.isStuck &&
+      !this._goalerLeftPassing &&
+      !this._goalerRightPassing
+    ) {
+      const ballBox = this.soccerBall.getBox();
+
+      // Check left goalers (blue team)
+      if (this.goalersLeft && this.goalersLeft.length > 0) {
+        for (const goaler of this.goalersLeft) {
+          const goalerBox = {
+            x: goaler.x,
+            y: goaler.y,
+            width: goaler.width,
+            height: goaler.height,
+          };
+
+          if (Game.rectsOverlap(ballBox, goalerBox)) {
+            this.isBallRolling = false;
+            this._stopBallAnimation = true;
+            this.soccerBall.isStuck = true;
+            this.soccerBall._possessedBy = "goaler-left";
+            this.soccerBall.stickToPlayer(goaler);
+            break;
+          }
+        }
+      }
+
+      // Check right goalers (red team)
+      if (
+        this.goalersRight &&
+        this.goalersRight.length > 0 &&
+        !this.soccerBall.isStuck
+      ) {
+        for (const goaler of this.goalersRight) {
+          const goalerBox = {
+            x: goaler.x,
+            y: goaler.y,
+            width: goaler.width,
+            height: goaler.height,
+          };
+
+          if (Game.rectsOverlap(ballBox, goalerBox)) {
+            this.isBallRolling = false;
+            this._stopBallAnimation = true;
+            this.soccerBall.isStuck = true;
+            this.soccerBall._possessedBy = "goaler-right";
+            this.soccerBall.stickToPlayer(goaler);
+            break;
+          }
+        }
+      }
+    }
+
     // Goal collision detection
     const goalInset = 49;
     const leftGoalBox = {
@@ -1707,6 +1764,187 @@ class Game {
               );
             }
           }
+        }
+      }
+    }
+
+    // Goaler passing logic - pass ball back to teammate when safe
+    const teammateCloseDistance = 350; // Teammate must be within this distance
+    const threatSafeDistance = 150; // Threat must be farther than this distance
+
+    // Left goaler (blue team) passing to player
+    if (
+      this.goalersLeft &&
+      this.goalersLeft.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-left" &&
+      !this._goalerLeftPassing
+    ) {
+      const leftGoaler = this.goalersLeft[0];
+      const teammate = this.player;
+      let threat = null;
+
+      // Identify the threat (opponent)
+      if (this.currentLevel === 6 && this.defenders[0]) {
+        threat = this.defenders[0];
+      } else if (this.currentLevel === "bot" && this.defenders[0]) {
+        threat = this.defenders[0];
+      }
+
+      if (teammate && threat) {
+        // Get teammate's feet position for accurate targeting
+        const teammateFeet = teammate.getFeetBox();
+        const teammateFeetCenterX = teammateFeet.x + teammateFeet.width / 2;
+        const teammateFeetCenterY = teammateFeet.y + teammateFeet.height / 2;
+
+        // Calculate distances
+        const teammateDistance = Math.sqrt(
+          Math.pow(teammateFeetCenterX - leftGoaler.x, 2) +
+            Math.pow(teammateFeetCenterY - leftGoaler.y, 2)
+        );
+        const threatDistance = Math.sqrt(
+          Math.pow(threat.x - leftGoaler.x, 2) +
+            Math.pow(threat.y - leftGoaler.y, 2)
+        );
+
+        // Debug logging
+        console.log("Left Goaler has ball:", {
+          teammateDistance: Math.floor(teammateDistance),
+          threatDistance: Math.floor(threatDistance),
+          shouldPass:
+            teammateDistance < teammateCloseDistance &&
+            threatDistance > threatSafeDistance,
+          passing: this._goalerLeftPassing,
+        });
+
+        // Pass if teammate is close and threat is far
+        if (
+          teammateDistance < teammateCloseDistance &&
+          threatDistance > threatSafeDistance
+        ) {
+          console.log(
+            "STARTING PASS! stopBallAnimation:",
+            this._stopBallAnimation
+          );
+          // Shoot the ball towards teammate
+          this._goalerLeftPassing = true;
+          this._stopBallAnimation = false;
+          this.isBallRolling = true;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          // Calculate direction to teammate's feet
+          const dx = teammateFeetCenterX - this.soccerBall.x;
+          const dy = teammateFeetCenterY - this.soccerBall.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          console.log("Pass direction:", { dx, dy, distance });
+
+          // Slow rolling animation towards teammate's feet (easier to receive)
+          const ball = this.soccerBall;
+          const speed = 2.5;
+          const totalFrames = Math.floor(distance / speed);
+          let frame = 0;
+
+          const rollBall = () => {
+            console.log("Rolling frame:", frame, "/", totalFrames);
+            if (frame < totalFrames && !this._stopBallAnimation) {
+              ball.x += (dx / distance) * speed;
+              ball.y += (dy / distance) * speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 8;
+              frame++;
+              requestAnimationFrame(rollBall);
+            } else {
+              console.log("Pass animation complete");
+              ball._rollingAngle = 0;
+              this.isBallRolling = false;
+              // Keep passing flag true for 30 frames (0.5 seconds) as cooldown
+              setTimeout(() => {
+                this._goalerLeftPassing = false;
+              }, 500);
+              this._stopBallAnimation = false;
+            }
+          };
+          rollBall();
+        }
+      }
+    }
+
+    // Right goaler (red team) passing to defender
+    if (
+      this.goalersRight &&
+      this.goalersRight.length > 0 &&
+      this.soccerBall._possessedBy === "goaler-right" &&
+      !this._goalerRightPassing
+    ) {
+      const rightGoaler = this.goalersRight[0];
+      let teammate = null;
+      const threat = this.player;
+
+      // Identify the teammate
+      if (this.currentLevel === 6 && this.defenders[0]) {
+        teammate = this.defenders[0];
+      } else if (this.currentLevel === "bot" && this.defenders[0]) {
+        teammate = this.defenders[0];
+      }
+
+      if (teammate && threat) {
+        // Get teammate's feet position for accurate targeting
+        const teammateFeet = teammate.getFeetBox();
+        const teammateFeetCenterX = teammateFeet.x + teammateFeet.width / 2;
+        const teammateFeetCenterY = teammateFeet.y + teammateFeet.height / 2;
+
+        // Calculate distances
+        const teammateDistance = Math.sqrt(
+          Math.pow(teammateFeetCenterX - rightGoaler.x, 2) +
+            Math.pow(teammateFeetCenterY - rightGoaler.y, 2)
+        );
+        const threatDistance = Math.sqrt(
+          Math.pow(threat.x - rightGoaler.x, 2) +
+            Math.pow(threat.y - rightGoaler.y, 2)
+        );
+
+        // Pass if teammate is close and threat is far
+        const threatSafeDistance = 150;
+        if (
+          teammateDistance < teammateCloseDistance &&
+          threatDistance > threatSafeDistance
+        ) {
+          // Shoot the ball towards teammate
+          this._goalerRightPassing = true;
+          this._stopBallAnimation = false;
+          this.isBallRolling = true;
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+
+          // Calculate direction to teammate's feet
+          const dx = teammateFeetCenterX - this.soccerBall.x;
+          const dy = teammateFeetCenterY - this.soccerBall.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          // Slow rolling animation towards teammate's feet (easier to receive)
+          const ball = this.soccerBall;
+          const speed = 2.5;
+          const totalFrames = Math.floor(distance / speed);
+          let frame = 0;
+
+          const rollBall = () => {
+            if (frame < totalFrames && !this._stopBallAnimation) {
+              ball.x += (dx / distance) * speed;
+              ball.y += (dy / distance) * speed;
+              ball._rollingAngle = (ball._rollingAngle || 0) + Math.PI / 8;
+              frame++;
+              requestAnimationFrame(rollBall);
+            } else {
+              ball._rollingAngle = 0;
+              this.isBallRolling = false;
+              // Keep passing flag true for 0.5 seconds as cooldown
+              setTimeout(() => {
+                this._goalerRightPassing = false;
+              }, 500);
+              this._stopBallAnimation = false;
+            }
+          };
+          rollBall();
         }
       }
     }
