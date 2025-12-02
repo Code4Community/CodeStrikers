@@ -37,8 +37,9 @@ window.LevelManager = {
       game.defenders.push(new Defender(game, 200, 250));
       game.defenders.push(new Defender(game, 150, 450));
       game.defenders.push(new Defender(game, 250, 50));
-      game.defenders.push(new Defender(game, 425, 200));
-      game.defenders.push(new Defender(game, 425, 350));
+      game.defenders.push(new Defender(game, 425, 150));
+      game.defenders.push(new Defender(game, 425, 400));
+      game.defenders.push(new Defender(game, 600, 250));
     } else if (level === 6) {
       // Level 6: 1v1 mode
       game.player.x = 160;
