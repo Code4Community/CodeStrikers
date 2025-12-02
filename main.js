@@ -270,8 +270,54 @@ class Defender {
 
     // Only move if not colliding with goaler
     if (!this.game.wouldCollideWithGoaler(this, newX, newY)) {
-      this.x = newX;
-      this.y = newY;
+      // Check for goal field collisions (Invisible Border)
+      let blockMovement = false;
+
+      // Only enforce border if bot has the ball
+      if (this.game.soccerBall && this.game.soccerBall._possessedBy === "defender") {
+        let inGoalArea = false;
+        let currentlyInGoalArea = false;
+
+        // Helper to check if a box is in a goal area
+        const checkArea = (x, y, w, h, field) => {
+          return (
+            x < field.x + field.width - 10 &&
+            x + w > field.x + 10 &&
+            y + h > field.y + 10 &&
+            y < field.y + field.height - 10
+          );
+        };
+
+        // Check left goal area
+        if (this.game.fieldLeft) {
+          if (checkArea(newX, newY, this.width, this.height, this.game.fieldLeft)) {
+            inGoalArea = true;
+          }
+          if (checkArea(this.x, this.y, this.width, this.height, this.game.fieldLeft)) {
+            currentlyInGoalArea = true;
+          }
+        }
+
+        // Check right goal area
+        if (this.game.fieldRight) {
+          if (checkArea(newX, newY, this.width, this.height, this.game.fieldRight)) {
+            inGoalArea = true;
+          }
+          if (checkArea(this.x, this.y, this.width, this.height, this.game.fieldRight)) {
+            currentlyInGoalArea = true;
+          }
+        }
+
+        // Only block if we are trying to enter the goal area from outside
+        if (inGoalArea && !currentlyInGoalArea) {
+          blockMovement = true;
+        }
+      }
+
+      if (!blockMovement) {
+        this.x = newX;
+        this.y = newY;
+      }
     }
   }
 
@@ -716,16 +762,14 @@ class Game {
     popup.className = "goal-popup";
     popup.innerHTML = `
       <div class="goal-popup-content">
-        <h2 class="goal-unique-effect">${
-          winner === "tie"
-            ? "It's a Tie!"
-            : winner === "player"
-            ? "You Win!"
-            : "Bot Wins!"
-        }</h2>
-        <p>Final Score: ${this.playerScore || 0} - ${
-      this.defenderScore || 0
-    }</p>
+        <h2 class="goal-unique-effect">${winner === "tie"
+        ? "It's a Tie!"
+        : winner === "player"
+          ? "You Win!"
+          : "Bot Wins!"
+      }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
+      }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -823,9 +867,8 @@ class Game {
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">Game Ended!</h2>
         <p>Time Played: ${timePlayed}</p>
-        <p>Final Score: ${this.playerScore || 0} - ${
-      this.defenderScore || 0
-    }</p>
+        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
+      }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -922,16 +965,14 @@ class Game {
     popup.className = "goal-popup";
     popup.innerHTML = `
       <div class="goal-popup-content">
-        <h2 class="goal-unique-effect">${
-          winner === "tie"
-            ? "It's a Tie!"
-            : winner === "player"
-            ? "Player Wins!"
-            : "Defender Wins!"
-        }</h2>
-        <p>Final Score: ${this.playerScore || 0} - ${
-      this.defenderScore || 0
-    }</p>
+        <h2 class="goal-unique-effect">${winner === "tie"
+        ? "It's a Tie!"
+        : winner === "player"
+          ? "Player Wins!"
+          : "Defender Wins!"
+      }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
+      }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -1027,9 +1068,8 @@ class Game {
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">Game Ended!</h2>
         <p>Time Played: ${timePlayed}</p>
-        <p>Final Score: ${this.playerScore || 0} - ${
-      this.defenderScore || 0
-    }</p>
+        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
+      }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -1224,8 +1264,8 @@ class Game {
           playerScore > defenderScore
             ? "player"
             : playerScore < defenderScore
-            ? "bot"
-            : "tie";
+              ? "bot"
+              : "tie";
         this.showGameOverPopup(winner);
         return;
       }
@@ -1429,8 +1469,8 @@ class Game {
           playerScore > defenderScore
             ? "player"
             : playerScore < defenderScore
-            ? "defender"
-            : "tie";
+              ? "defender"
+              : "tie";
         this.showGameOverPopup1v1(winner);
         return;
       }
@@ -1609,8 +1649,8 @@ class Game {
           playerScore > defenderScore
             ? "player"
             : playerScore < defenderScore
-            ? "bot"
-            : "tie";
+              ? "bot"
+              : "tie";
         this.showGameOverPopup(winner);
         return;
       }
@@ -1723,7 +1763,7 @@ class Game {
       if (threat) {
         const distance = Math.sqrt(
           Math.pow(threat.x - leftGoaler.x, 2) +
-            Math.pow(threat.y - leftGoaler.y, 2)
+          Math.pow(threat.y - leftGoaler.y, 2)
         );
 
         if (distance < activationDistance) {
@@ -1762,7 +1802,7 @@ class Game {
       if (threat) {
         const distance = Math.sqrt(
           Math.pow(threat.x - rightGoaler.x, 2) +
-            Math.pow(threat.y - rightGoaler.y, 2)
+          Math.pow(threat.y - rightGoaler.y, 2)
         );
 
         if (distance < activationDistance) {
@@ -1817,11 +1857,11 @@ class Game {
         // Calculate distances
         const teammateDistance = Math.sqrt(
           Math.pow(teammateFeetCenterX - leftGoaler.x, 2) +
-            Math.pow(teammateFeetCenterY - leftGoaler.y, 2)
+          Math.pow(teammateFeetCenterY - leftGoaler.y, 2)
         );
         const threatDistance = Math.sqrt(
           Math.pow(threat.x - leftGoaler.x, 2) +
-            Math.pow(threat.y - leftGoaler.y, 2)
+          Math.pow(threat.y - leftGoaler.y, 2)
         );
 
         // Debug logging
@@ -1914,11 +1954,11 @@ class Game {
         // Calculate distances
         const teammateDistance = Math.sqrt(
           Math.pow(teammateFeetCenterX - rightGoaler.x, 2) +
-            Math.pow(teammateFeetCenterY - rightGoaler.y, 2)
+          Math.pow(teammateFeetCenterY - rightGoaler.y, 2)
         );
         const threatDistance = Math.sqrt(
           Math.pow(threat.x - rightGoaler.x, 2) +
-            Math.pow(threat.y - rightGoaler.y, 2)
+          Math.pow(threat.y - rightGoaler.y, 2)
         );
 
         // Pass if teammate is close and threat is far
@@ -2094,6 +2134,125 @@ class Game {
     const dx = ballCenterX - botFeetCenterX;
     const dy = ballCenterY - botFeetCenterY;
     const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // STUCK DETECTION AND RECOVERY SYSTEM
+    // Initialize stuck tracking variables if they don't exist
+    if (!this._botPositionHistory) {
+      this._botPositionHistory = [];
+    }
+    if (typeof this._botStuckCounter === "undefined") {
+      this._botStuckCounter = 0;
+    }
+    if (typeof this._botUnstuckFrames === "undefined") {
+      this._botUnstuckFrames = 0;
+    }
+
+    // Track position history (keep last 30 frames)
+    this._botPositionHistory.push({ x: botFeetCenterX, y: botFeetCenterY });
+    if (this._botPositionHistory.length > 30) {
+      this._botPositionHistory.shift();
+    }
+
+    // Check if bot is stuck (hasn't moved much in last 30 frames)
+    let isStuck = false;
+    if (this._botPositionHistory.length >= 30) {
+      const oldPos = this._botPositionHistory[0];
+      const movementDistance = Math.sqrt(
+        Math.pow(botFeetCenterX - oldPos.x, 2) +
+        Math.pow(botFeetCenterY - oldPos.y, 2)
+      );
+
+      // If bot hasn't moved at least 15 pixels in 30 frames, it's stuck
+      if (movementDistance < 15) {
+        this._botStuckCounter++;
+      } else {
+        this._botStuckCounter = 0;
+      }
+
+      // Consider stuck if counter reaches threshold
+      if (this._botStuckCounter > 10) {
+        isStuck = true;
+      }
+    }
+
+    // UNSTUCK BEHAVIOR - Executes when bot is stuck
+    if (isStuck || this._botUnstuckFrames > 0) {
+      // Execute unstuck movement for 40 frames
+      if (this._botUnstuckFrames === 0) {
+        this._botUnstuckFrames = 40;
+        // Release ball if stuck with it
+        if (this.soccerBall._possessedBy === "defender") {
+          this.soccerBall.isStuck = false;
+          this.soccerBall._possessedBy = undefined;
+        }
+      }
+
+      // Determine escape direction based on boundary proximity
+      let escapeX = 0;
+      let escapeY = 0;
+
+      // Check proximity to boundaries
+      const edgeThreshold = 100;
+      const nearLeftEdge = botFeetCenterX < edgeThreshold;
+      const nearRightEdge = botFeetCenterX > this.width - edgeThreshold;
+      const nearTopEdge = botFeetCenterY < edgeThreshold;
+      const nearBottomEdge = botFeetCenterY > this.height - edgeThreshold;
+
+      // Move away from nearest boundary
+      if (nearLeftEdge) escapeX = 1; // Move right
+      if (nearRightEdge) escapeX = -1; // Move left
+      if (nearTopEdge) escapeY = 1; // Move down
+      if (nearBottomEdge) escapeY = -1; // Move up
+
+      // If in corner, prioritize both directions
+      if (nearLeftEdge && nearTopEdge) {
+        escapeX = 1;
+        escapeY = 1;
+      } else if (nearLeftEdge && nearBottomEdge) {
+        escapeX = 1;
+        escapeY = -1;
+      } else if (nearRightEdge && nearTopEdge) {
+        escapeX = -1;
+        escapeY = 1;
+      } else if (nearRightEdge && nearBottomEdge) {
+        escapeX = -1;
+        escapeY = -1;
+      }
+
+      // If not near any edge, move toward center
+      if (escapeX === 0 && escapeY === 0) {
+        const centerX = this.width / 2;
+        const centerY = this.height / 2;
+        escapeX = centerX > botFeetCenterX ? 1 : -1;
+        escapeY = centerY > botFeetCenterY ? 1 : -1;
+      }
+
+      // Add random offset to avoid repeating stuck pattern
+      const randomOffset = Math.random() * 0.5 - 0.25; // -0.25 to 0.25
+      escapeX += randomOffset;
+      escapeY += randomOffset;
+
+      // Normalize and apply escape movement
+      const escapeDistance = Math.sqrt(
+        escapeX * escapeX + escapeY * escapeY
+      );
+      if (escapeDistance > 0) {
+        const moveX = (escapeX / escapeDistance) * botSpeed * 1.5; // Move faster when escaping
+        const moveY = (escapeY / escapeDistance) * botSpeed * 1.5;
+        bot.move(moveX, moveY);
+      }
+
+      // Decrement unstuck counter
+      this._botUnstuckFrames--;
+
+      // Reset stuck tracking after unstuck behavior completes
+      if (this._botUnstuckFrames === 0) {
+        this._botStuckCounter = 0;
+        this._botPositionHistory = [];
+      }
+
+      return; // Exit early during unstuck behavior
+    }
 
     // If ball is possessed by bot, move towards goal
     if (this.soccerBall._possessedBy === "defender") {
@@ -2286,8 +2445,45 @@ class Game {
         bot.move(moveX, moveY);
       }
 
-      // Shoot when close to goal
-      if (goalDistance < shootDistance) {
+      // Check if bot is in front of the goal (proper shooting position)
+      // Bot should be to the RIGHT of the goal to shoot at it
+      // OR be within reasonable shooting range horizontally aligned with goal
+      const goalLeftEdge = this.fieldLeft.x;
+      const goalRightEdge = this.fieldLeft.x + this.fieldLeft.width;
+      const isInFrontOfGoal = botFeetCenterX > (goalRightEdge + 20); // Reduced from 50 to 20
+      const isAlignedWithGoal = botFeetCenterX > (goalRightEdge - 30); // Within 30px of goal opening
+
+      // Check if bot is at the edge (top or bottom) OR goal box edges OR inside goal box
+      const edgeThreshold = 60; // Distance from edge to be considered "at edge"
+      const isAtTopEdge = botFeetCenterY < edgeThreshold;
+      const isAtBottomEdge = botFeetCenterY > (this.height - edgeThreshold);
+
+      const goalBoxTop = this.fieldLeft.y;
+      const goalBoxBottom = this.fieldLeft.y + this.fieldLeft.height;
+      const isAtGoalTopEdge = Math.abs(botFeetCenterY - goalBoxTop) < 40;
+      const isAtGoalBottomEdge = Math.abs(botFeetCenterY - goalBoxBottom) < 40;
+
+      // Check if inside goal box (should back up if we have the ball inside)
+      const isInsideGoalBox = botFeetCenterX < goalRightEdge + 10;
+
+      const isAtEdge = isAtTopEdge || isAtBottomEdge || isAtGoalTopEdge || isAtGoalBottomEdge || isInsideGoalBox;
+
+      // If at edge and close to goal, back up to create space instead of shooting
+      if (isAtEdge && goalDistance < shootDistance && (isInFrontOfGoal || isAlignedWithGoal)) {
+        // Back up toward center of field
+        const centerY = this.height / 2;
+        const backupX = 1; // Move slightly right (away from goal)
+        const backupY = centerY > botFeetCenterY ? 1 : -1; // Move toward center
+
+        const backupDistance = Math.sqrt(backupX * backupX + backupY * backupY);
+        const moveX = (backupX / backupDistance) * botSpeed;
+        const moveY = (backupY / backupDistance) * botSpeed;
+        bot.move(moveX, moveY);
+        return; // Skip shooting, just back up
+      }
+
+      // Shoot when close to goal AND in proper shooting position AND not at edge
+      if (goalDistance < shootDistance && (isInFrontOfGoal || isAlignedWithGoal)) {
         // Shoot logic - avoid goaler if present in goaler mode
         if (!this._botShooting) {
           this.isBallRolling = true;
@@ -2372,7 +2568,7 @@ class Game {
         // But if bot is far from ball, try to intercept path to goal
         const botToPlayerDist = Math.sqrt(
           (playerCenterX - botFeetCenterX) ** 2 +
-            (playerCenterY - botFeetCenterY) ** 2
+          (playerCenterY - botFeetCenterY) ** 2
         );
 
         const interceptThreshold = difficulty === "hard" ? 180 : 150;
