@@ -39,7 +39,18 @@ window.LevelManager = {
       game.defenders.push(new Defender(game, 250, 50));
       game.defenders.push(new Defender(game, 425, 200));
       game.defenders.push(new Defender(game, 425, 350));
-    } else if (level === 6) {
+    } else if (level === 4) {
+      // Level 4: Three defenders spread horizontally
+      game.soccerBall.x = (game.width - game.soccerBall.width) / 2;
+      game.soccerBall.y = (game.height - game.soccerBall.height) / 2;
+      game.soccerBall.isStuck = false;
+      game.defenders.push(new Defender(game,350, 200));
+      game.defenders.push(new Defender(game, 350, 350));
+      game.defenders.push(new Defender(game,500, 200));
+      game.defenders.push(new Defender(game, 500, 350));
+      game.defenders.push(new Defender(game,650, 200));
+      game.defenders.push(new Defender(game, 650, 350));
+    }else if (level === 6) {
       // Level 6: 1v1 mode
       game.player.x = 160;
       game.player.y = 250;

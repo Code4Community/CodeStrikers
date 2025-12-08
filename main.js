@@ -119,6 +119,10 @@ class Player {
         this.game.soccerBall.stickToPlayer(this);
       }
       console.log(`Player moved right to x: ${this.x}`);
+      // If we're on level 4, cause defenders to step asynchronously
+      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+        this.game.stepDefendersOnPlayerMove();
+      }
     } else {
       console.log(`Can't move right - boundary reached!`);
     }
@@ -157,6 +161,10 @@ class Player {
         this.game.soccerBall.stickToPlayer(this);
       }
       console.log(`Player moved left to x: ${this.x}`);
+      // If we're on level 4, cause defenders to step asynchronously
+      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+        this.game.stepDefendersOnPlayerMove();
+      }
     } else {
       console.log(`Can't move left - boundary reached!`);
     }
@@ -179,6 +187,10 @@ class Player {
         this.game.soccerBall.stickToPlayer(this);
       }
       console.log(`Player moved up to y: ${this.y}`);
+      // If we're on level 4, cause defenders to step asynchronously
+      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+        this.game.stepDefendersOnPlayerMove();
+      }
     } else {
       console.log(`Can't move up - boundary reached!`);
     }
@@ -201,6 +213,10 @@ class Player {
         this.game.soccerBall.stickToPlayer(this);
       }
       console.log(`Player moved down to y: ${this.y}`);
+      // If we're on level 4, cause defenders to step asynchronously
+      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+        this.game.stepDefendersOnPlayerMove();
+      }
     } else {
       console.log(`Can't move down - boundary reached!`);
     }
@@ -256,6 +272,41 @@ class Defender {
     this.x = x;
     this.y = y;
     this.image = document.getElementById("defender");
+    // track original vertical block index and limits for level-4 behavior
+    this._startY = this.y;
+    this._blockIndex = 0; // 0 = at start, +1 = one block down, -1 = one block up, etc.
+    this._blockLimit = 2; // allow up to 2 blocks up or down
+  }
+
+  // Move one block up or down with smooth animation.
+  // Called when attacker moves (level 4).
+  async stepOneBlockRandom() {
+    // pick possible directions based on current block index and limits
+    const possible = [];
+    if (this._blockIndex > -this._blockLimit) possible.push(-1); // can move up
+    if (this._blockIndex < this._blockLimit) possible.push(1); // can move down
+    if (possible.length === 0) return;
+    const dir = possible[Math.floor(Math.random() * possible.length)];
+
+    const blockSize = this.game && this.game.player ? this.game.player.speed : 55;
+    const targetY = Math.max(
+      0,
+      Math.min(this.y + dir * blockSize, this.game.height - this.height)
+    );
+    // compute new block index relative to startY
+    const newIndex = Math.round((targetY - this._startY) / blockSize);
+    // clamp just in case
+    if (newIndex < -this._blockLimit || newIndex > this._blockLimit) return;
+
+    // Smooth animation: divide movement into steps like the player does
+    const steps = 8;
+    const dy = targetY - this.y;
+    for (let i = 0; i < steps; i++) {
+      this.y += dy / steps;
+      await new Promise((r) => setTimeout(r, 12));
+    }
+    this.y = targetY;
+    this._blockIndex = newIndex;
   }
 
   move(dx, dy) {
@@ -390,6 +441,25 @@ class Game {
     this.isExecuting = false;
     this.pressedKeys = new Set();
     this.isBallRolling = false; // Prevent repeated spacebar triggers
+  }
+
+  // Trigger defenders to each take one random vertical block step.
+  // Only runs when on level 4. Defenders move asynchronously in parallel.
+  stepDefendersOnPlayerMove() {
+    if (this.currentLevel !== 4) return;
+    if (!this.defenders || this.defenders.length === 0) return;
+    // Start all defender animations in parallel (don't await them)
+    for (let d of this.defenders) {
+      try {
+        if (typeof d.stepOneBlockRandom === "function") {
+          d.stepOneBlockRandom().catch((e) =>
+            console.error("Error stepping defender:", e)
+          );
+        }
+      } catch (e) {
+        console.error("Error stepping defender:", e);
+      }
+    }
   }
 
   getPlayerDirection(playerType) {
@@ -677,6 +747,7 @@ class Game {
     if (
       (this.currentLevel === 2 ||
         this.currentLevel === 3 ||
+        this.currentLevel === 4 ||
         this.currentLevel === 6 ||
         this.currentLevel === "bot") &&
       this.defenders &&
