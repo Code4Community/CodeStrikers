@@ -394,9 +394,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let nextLevel;
     if (typeof currentGame.currentLevel === "number") {
-      if (currentGame.currentLevel < 5) {
+      if (currentGame.currentLevel < 4) {
         nextLevel = currentGame.currentLevel + 1;
-      } else if (currentGame.currentLevel === 5) {
+      } else if (currentGame.currentLevel === 4) {
         nextLevel = "bot";
       }
     } else if (currentGame.currentLevel === "bot") {
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentGame.currentLevel === 6) {
       prevLevel = "bot";
     } else if (currentGame.currentLevel === "bot") {
-      prevLevel = 5;
+      prevLevel = 4;
     } else if (
       typeof currentGame.currentLevel === "number" &&
       currentGame.currentLevel > 1

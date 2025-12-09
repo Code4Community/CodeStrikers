@@ -1350,7 +1350,7 @@ class Game {
     const popup = document.createElement("div");
     popup.id = "goal-popup";
     popup.className = "goal-popup";
-    const nextLevel = Math.min(this.currentLevel + 1, 5);
+    const nextLevel = Math.min(this.currentLevel + 1, 4);
     popup.innerHTML = `
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">Great job!</h2>
@@ -1362,7 +1362,7 @@ class Game {
     document.body.appendChild(popup);
     document.getElementById("next-level-popup-btn").onclick = () => {
       popup.remove();
-      if (this.currentLevel < 5) {
+      if (this.currentLevel < 4) {
         this.loadLevel(nextLevel);
         const editor = document.getElementById("game-textbox");
         if (editor) {
@@ -1373,6 +1373,11 @@ class Game {
         }
         const dropdown = document.getElementById("level-dropdown");
         if (dropdown) dropdown.value = nextLevel;
+      } else if (this.currentLevel === 4) {
+        // Transition to bot mode
+        this.loadLevel("bot");
+        const dropdown = document.getElementById("level-dropdown");
+        if (dropdown) dropdown.value = "bot";
       }
     };
     document.getElementById("close-popup-btn").onclick = () => {
