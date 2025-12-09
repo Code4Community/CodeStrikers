@@ -37,8 +37,9 @@ window.LevelManager = {
       game.defenders.push(new Defender(game, 200, 250));
       game.defenders.push(new Defender(game, 150, 450));
       game.defenders.push(new Defender(game, 250, 50));
-      game.defenders.push(new Defender(game, 425, 200));
-      game.defenders.push(new Defender(game, 425, 350));
+      game.defenders.push(new Defender(game, 425, 150));
+      game.defenders.push(new Defender(game, 425, 400));
+      game.defenders.push(new Defender(game, 600, 250));
     } else if (level === 4) {
       // Level 4: Three defenders spread horizontally
       game.soccerBall.x = (game.width - game.soccerBall.width) / 2;
