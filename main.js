@@ -1385,6 +1385,79 @@ class Game {
     };
   }
 
+  showGameOverFailedPopup() {
+    // Check if popup already exists
+    if (document.getElementById("game-over-failed-popup")) return;
+
+    const popup = document.createElement("div");
+    popup.id = "game-over-failed-popup";
+    popup.className = "goal-popup"; // Reuse goal popup styling
+    popup.innerHTML = `
+      <div class="goal-popup-content" style="border-color: #d32f2f;">
+        <h2 class="goal-unique-effect" style="color: #d32f2f;">Game Over</h2>
+        <p>You hit a defender!</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+          <button id="restart-failed-btn" class="red-btn">Restart</button>
+          <button id="try-again-failed-btn" class="green-btn">Try Again</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(popup);
+
+    // Restart button: Clear code and reset player
+    document.getElementById("restart-failed-btn").onclick = () => {
+      if (confirm("Are you sure you want to restart? This will clear your code.")) {
+        popup.remove();
+        const editor = document.getElementById("game-textbox");
+        if (editor) {
+          editor.innerText = ""; // Clear code
+          // Trigger input event to update highlighting/line numbers
+          editor.dispatchEvent(new Event("input"));
+        }
+        this.player.reset();
+      }
+    };
+
+    // Try Again button: Reset player only, keep code
+    document.getElementById("try-again-failed-btn").onclick = () => {
+      popup.remove();
+      this.player.reset();
+    };
+  }
+
+  checkPlayerDefenderCollision() {
+    // Only check collision in levels 1-4 (where defenders exist and it's not bot/1v1 mode)
+    if (this.currentLevel === "bot" || this.currentLevel === 6) return false;
+
+    // Get player hitbox (slightly smaller than visual size for fairness)
+    const playerBox = {
+      x: this.player.x + 10,
+      y: this.player.y + 10,
+      width: this.player.width - 20,
+      height: this.player.height - 20
+    };
+
+    for (const defender of this.defenders) {
+      const defenderBox = {
+        x: defender.x + 10,
+        y: defender.y + 10,
+        width: defender.width - 20,
+        height: defender.height - 20
+      };
+
+      if (
+        playerBox.x < defenderBox.x + defenderBox.width &&
+        playerBox.x + playerBox.width > defenderBox.x &&
+        playerBox.y < defenderBox.y + defenderBox.height &&
+        playerBox.y + playerBox.height > defenderBox.y
+      ) {
+        this.showGameOverFailedPopup();
+        return true; // Collision detected
+      }
+    }
+    return false;
+  }
+
   loadLevel(level) {
     // Import loadLevel from levels.js
     if (window.LevelManager) {
@@ -1442,21 +1515,25 @@ class Game {
     const userFunctions = {
       moveRight: async function () {
         await player.moveRight();
+        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveLeft: async function () {
         await player.moveLeft();
+        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveUp: async function () {
         await player.moveUp();
+        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveDown: async function () {
         await player.moveDown();
+        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
@@ -1508,8 +1585,11 @@ class Game {
         defenders
       );
     } catch (error) {
-      console.error("Error executing user code:", error);
-      alert("Error in code: " + error.message);
+      // Don't show alert if it's just a collision (popup already handles it)
+      if (error.message !== "Collision with defender") {
+        console.error("Error executing user code:", error);
+        alert("Error in code: " + error.message);
+      }
     }
 
     this.isExecuting = false;

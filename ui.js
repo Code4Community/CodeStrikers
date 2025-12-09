@@ -273,6 +273,24 @@ document.addEventListener("DOMContentLoaded", () => {
     pre.setEnd(range.endContainer, range.endOffset);
     const caretPos = pre.toString().length;
 
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // Insert newline at cursor
+      range.deleteContents();
+      const br = document.createTextNode("\n");
+      range.insertNode(br);
+
+      // Move caret after the newline
+      range.setStartAfter(br);
+      range.setEndAfter(br);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Trigger input to update highlighting
+      editor.dispatchEvent(new Event("input"));
+      return;
+    }
+
     if (e.key === "(") {
       e.preventDefault();
       // Replace any selection with paired parentheses and place caret between
