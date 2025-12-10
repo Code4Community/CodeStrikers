@@ -741,6 +741,21 @@ body>* {
   font-weight: 600;
 }
 
+.token-keyword {
+  color: #9c27b0;
+  font-weight: 700;
+}
+
+.token-braces {
+  color: #ff6f00;
+  font-weight: 600;
+}
+
+.token-number {
+  color: #00796b;
+  font-weight: 600;
+}
+
 /* Instructions Section */
 .instructions {
   width: 100%;

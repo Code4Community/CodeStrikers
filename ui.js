@@ -12,6 +12,21 @@ function checkSyntaxErrors(code) {
     const trimmedLine = line.trim();
     if (trimmedLine.length === 0) return;
 
+    // Skip lines that are just closing braces
+    if (trimmedLine === "}") return;
+
+    // Check for for loop syntax
+    if (trimmedLine.startsWith("for") || trimmedLine.startsWith("for(")) {
+      // Basic validation for for loop
+      if (!trimmedLine.includes("(") || (!trimmedLine.includes("{") && !trimmedLine.endsWith(")"))) {
+        errors.push({
+          line: index + 1,
+          message: `Invalid for loop syntax. Use: for(let i = 0; i < N; i++) {`
+        });
+      }
+      return;
+    }
+
     let isValid = false;
     for (const func of FUNCTIONS) {
       if (trimmedLine === `${func}()`) {
@@ -25,7 +40,7 @@ function checkSyntaxErrors(code) {
         line: index + 1,
         message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.map(
           (f) => f + "()"
-        ).join(", ")}`,
+        ).join(", ")} or for loops`,
       });
     }
   });
@@ -78,6 +93,10 @@ function escapeHtml(text) {
 function highlightCode(code) {
   let escaped = escapeHtml(code);
 
+  // Highlight 'for' keyword
+  escaped = escaped.replace(/\b(for)\b/g, `<span class="token-keyword">$1</span>`);
+
+  // Highlight function names
   FUNCTIONS.forEach((fn) => {
     const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
     escaped = escaped.replace(
@@ -86,8 +105,16 @@ function highlightCode(code) {
     );
   });
 
+  // Highlight parentheses
   escaped = escaped.replace(/\(/g, `<span class="token-parens">(</span>`);
   escaped = escaped.replace(/\)/g, `<span class="token-parens">)</span>`);
+
+  // Highlight curly braces
+  escaped = escaped.replace(/\{/g, `<span class="token-braces">{</span>`);
+  escaped = escaped.replace(/\}/g, `<span class="token-braces">}</span>`);
+
+  // Highlight numbers
+  escaped = escaped.replace(/\b(\d+)\b/g, `<span class="token-number">$1</span>`);
 
   return escaped;
 }
@@ -275,16 +302,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      // Insert newline at cursor
-      range.deleteContents();
-      const br = document.createTextNode("\n");
-      range.insertNode(br);
+      const text = editor.innerText || "";
 
-      // Move caret after the newline
-      range.setStartAfter(br);
-      range.setEndAfter(br);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      // Check if cursor is between {}
+      const charBefore = text.charAt(caretPos - 1);
+      const charAfter = text.charAt(caretPos);
+
+      if (charBefore === "{" && charAfter === "}") {
+        // Insert two newlines with indentation in between
+        range.deleteContents();
+        const newlines = document.createTextNode("\n  \n");
+        range.insertNode(newlines);
+
+        // Move caret to the indented line (after first \n and two spaces)
+        setCaretAtPos(editor, caretPos + 3);
+      } else {
+        // Regular newline
+        range.deleteContents();
+        const br = document.createTextNode("\n");
+        range.insertNode(br);
+
+        // Move caret after the newline
+        range.setStartAfter(br);
+        range.setEndAfter(br);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
 
       // Trigger input to update highlighting
       editor.dispatchEvent(new Event("input"));
@@ -312,10 +355,40 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (e.key === "{") {
+      e.preventDefault();
+      // Replace any selection with paired braces and place caret between
+      range.deleteContents();
+
+      const openNode = document.createTextNode("{");
+      const closeNode = document.createTextNode("}");
+
+      // Insert close then open so caret can be placed between them
+      range.insertNode(closeNode);
+      range.insertNode(openNode);
+
+      // Move caret between the two nodes
+      const newPos = caretPos + 1; // after '{'
+      setCaretAtPos(editor, newPos);
+
+      // Trigger input to run highlighting and UI updates
+      editor.dispatchEvent(new Event("input"));
+      return;
+    }
+
     if (e.key === ")") {
       // If the next character in plain text is already ')', skip over it
       const text = editor.innerText || "";
       if (text.charAt(caretPos) === ")") {
+        e.preventDefault();
+        setCaretAtPos(editor, caretPos + 1);
+      }
+    }
+
+    if (e.key === "}") {
+      // If the next character in plain text is already '}', skip over it
+      const text = editor.innerText || "";
+      if (text.charAt(caretPos) === "}") {
         e.preventDefault();
         setCaretAtPos(editor, caretPos + 1);
       }
