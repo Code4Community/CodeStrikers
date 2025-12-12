@@ -115,6 +115,7 @@ class Player {
         await new Promise((r) => setTimeout(r, 12));
       }
       this.x = targetX;
+      if (window.soundManager) window.soundManager.playMove();
       if (this.game.soccerBall.isStuck) {
         this.game.soccerBall.stickToPlayer(this);
       }
@@ -149,6 +150,7 @@ class Player {
         await new Promise((r) => setTimeout(r, 12));
       }
       this.x = targetX;
+      if (window.soundManager) window.soundManager.playMove();
       let canStick = true;
       if (this.game.currentLevel === 6) {
         const playerRight = this.x + this.width;
@@ -183,6 +185,7 @@ class Player {
         await new Promise((r) => setTimeout(r, 12));
       }
       this.y = targetY;
+      if (window.soundManager) window.soundManager.playMove();
       if (this.game.soccerBall.isStuck) {
         this.game.soccerBall.stickToPlayer(this);
       }
@@ -209,6 +212,7 @@ class Player {
         await new Promise((r) => setTimeout(r, 12));
       }
       this.y = targetY;
+      if (window.soundManager) window.soundManager.playMove();
       if (this.game.soccerBall.isStuck) {
         this.game.soccerBall.stickToPlayer(this);
       }
@@ -226,6 +230,7 @@ class Player {
     if (this.game.soccerBall.isStuck) {
       this.game.soccerBall.isStuck = false;
       this.game.soccerBall._isShooting = true; // Prevent re-sticking during shot
+      if (window.soundManager) window.soundManager.playShoot();
       const ball = this.game.soccerBall;
       const spaces = this.speed * 4;
       const frames = 16;
@@ -828,6 +833,12 @@ class Game {
       clearInterval(window._freeplayTimerInterval);
     }
 
+    if (window.soundManager) {
+      if (winner === "tie") window.soundManager.playLose();
+      else if (winner === "player") window.soundManager.playWin();
+      else window.soundManager.playLose();
+    }
+
     const popup = document.createElement("div");
     popup.id = "game-over-popup";
     popup.className = "goal-popup";
@@ -1029,6 +1040,12 @@ class Game {
     }
     if (window._freeplayTimerInterval) {
       clearInterval(window._freeplayTimerInterval);
+    }
+
+    if (window.soundManager) {
+      if (winner === "tie") window.soundManager.playLose();
+      else if (winner === "player") window.soundManager.playWin();
+      else window.soundManager.playLose();
     }
 
     const popup = document.createElement("div");
@@ -1233,6 +1250,7 @@ class Game {
         height: this.fieldRight.height,
       };
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+        if (window.soundManager) window.soundManager.playGoal();
         this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
 
@@ -1246,6 +1264,7 @@ class Game {
           return;
         }
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+        if (window.soundManager) window.soundManager.playGoal();
         this.defenderScore = (this.defenderScore || 0) + 1;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
@@ -1293,6 +1312,7 @@ class Game {
         height: this.fieldRight.height,
       };
       if (Game.rectsOverlap(ballBox, rightGoalBox)) {
+        if (window.soundManager) window.soundManager.playGoal();
         this.playerScore = (this.playerScore || 0) + 1;
         document.getElementById("score-player").textContent = this.playerScore;
 
@@ -1306,6 +1326,7 @@ class Game {
           return;
         }
       } else if (Game.rectsOverlap(ballBox, leftGoalBox)) {
+        if (window.soundManager) window.soundManager.playGoal();
         this.defenderScore = (this.defenderScore || 0) + 1;
         document.getElementById("score-defender").textContent =
           this.defenderScore;
@@ -1349,6 +1370,7 @@ class Game {
 
     const popup = document.createElement("div");
     popup.id = "goal-popup";
+    if (window.soundManager) window.soundManager.playGoal();
     popup.className = "goal-popup";
     const nextLevel = Math.min(this.currentLevel + 1, 4);
     popup.innerHTML = `
@@ -1388,6 +1410,8 @@ class Game {
   showGameOverFailedPopup() {
     // Check if popup already exists
     if (document.getElementById("game-over-failed-popup")) return;
+
+    if (window.soundManager) window.soundManager.playLose();
 
     const popup = document.createElement("div");
     popup.id = "game-over-failed-popup";

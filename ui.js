@@ -206,6 +206,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (difficultyButtons) difficultyButtons.style.display = "none";
 
+  // Global sound listener for all buttons
+  document.body.addEventListener("click", (e) => {
+    if (e.target.tagName === "BUTTON" || (e.target.classList && e.target.classList.contains("difficulty-btn"))) {
+      if (window.soundManager) {
+        window.soundManager.playClick();
+      }
+    }
+  });
+
   // Editor input handler
   editor.addEventListener("input", (e) => {
     if (!editor.isContentEditable) return;
@@ -740,6 +749,11 @@ document.addEventListener("DOMContentLoaded", () => {
       window._currentModeBtn = modeSelectedBtn;
 
       setupGameMode(modeSelectedBtn);
+
+      // Play start sound
+      if (window.soundManager) {
+        window.soundManager.playStart();
+      }
     });
   }
 
