@@ -18,10 +18,13 @@ function checkSyntaxErrors(code) {
     // Check for for loop syntax
     if (trimmedLine.startsWith("for") || trimmedLine.startsWith("for(")) {
       // Basic validation for for loop
-      if (!trimmedLine.includes("(") || (!trimmedLine.includes("{") && !trimmedLine.endsWith(")"))) {
+      if (
+        !trimmedLine.includes("(") ||
+        (!trimmedLine.includes("{") && !trimmedLine.endsWith(")"))
+      ) {
         errors.push({
           line: index + 1,
-          message: `Invalid for loop syntax. Use: for(let i = 0; i < N; i++) {`
+          message: `Invalid for loop syntax. Use: for(let i = 0; i < N; i++) {`,
         });
       }
       return;
@@ -39,7 +42,7 @@ function checkSyntaxErrors(code) {
       errors.push({
         line: index + 1,
         message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.map(
-          (f) => f + "()"
+          (f) => f + "()",
         ).join(", ")} or for loops`,
       });
     }
@@ -94,14 +97,17 @@ function highlightCode(code) {
   let escaped = escapeHtml(code);
 
   // Highlight 'for' keyword
-  escaped = escaped.replace(/\b(for)\b/g, `<span class="token-keyword">$1</span>`);
+  escaped = escaped.replace(
+    /\b(for)\b/g,
+    `<span class="token-keyword">$1</span>`,
+  );
 
   // Highlight function names
   FUNCTIONS.forEach((fn) => {
     const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
     escaped = escaped.replace(
       fnRegex,
-      `<span class="token-function">$1</span>`
+      `<span class="token-function">$1</span>`,
     );
   });
 
@@ -114,7 +120,10 @@ function highlightCode(code) {
   escaped = escaped.replace(/\}/g, `<span class="token-braces">}</span>`);
 
   // Highlight numbers
-  escaped = escaped.replace(/\b(\d+)\b/g, `<span class="token-number">$1</span>`);
+  escaped = escaped.replace(
+    /\b(\d+)\b/g,
+    `<span class="token-number">$1</span>`,
+  );
 
   return escaped;
 }
@@ -172,7 +181,7 @@ function showAllGameButtons() {
     difficultyGrid &&
     difficultyGrid.previousElementSibling &&
     difficultyGrid.previousElementSibling.textContent.includes(
-      "Select Difficulty"
+      "Select Difficulty",
     )
   ) {
     difficultyGrid.previousElementSibling.style.display = "block";
@@ -208,7 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Global sound listener for all buttons
   document.body.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON" || (e.target.classList && e.target.classList.contains("difficulty-btn"))) {
+    if (
+      e.target.tagName === "BUTTON" ||
+      (e.target.classList && e.target.classList.contains("difficulty-btn"))
+    ) {
       if (window.soundManager) {
         window.soundManager.playClick();
       }
@@ -607,11 +619,11 @@ document.addEventListener("DOMContentLoaded", () => {
       modeButtonsContainer.querySelectorAll(".difficulty-btn");
     const timedBtn = document.getElementById("timed-btn");
     const timedInputContainer = document.getElementById(
-      "timed-input-container"
+      "timed-input-container",
     );
     const toscoreBtn = document.getElementById("toscore-btn");
     const toscoreInputContainer = document.getElementById(
-      "toscore-input-container"
+      "toscore-input-container",
     );
     const freeplayBtn = document.getElementById("freeplay-btn");
     const freeplayMessage = document.getElementById("freeplay-message");
@@ -693,13 +705,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const difficultySelected =
         difficultyGrid &&
         Array.from(difficultyGrid.querySelectorAll(".difficulty-btn")).some(
-          (btn) => btn.classList.contains("selected")
+          (btn) => btn.classList.contains("selected"),
         );
       const modeButtons = document.querySelector(".mode-buttons");
       const modeSelectedBtn =
         modeButtons &&
         Array.from(modeButtons.querySelectorAll(".difficulty-btn")).find(
-          (btn) => btn.classList.contains("selected")
+          (btn) => btn.classList.contains("selected"),
         );
 
       let validInput = true;
@@ -725,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!difficultySelected || !modeSelectedBtn || !validInput) {
         showPopup(
-          "Please select a difficulty, mode, and enter a value if required."
+          "Please select a difficulty, mode, and enter a value if required.",
         );
         return;
       }
@@ -734,7 +746,7 @@ document.addEventListener("DOMContentLoaded", () => {
         window.currentGame.botModeStarted = true;
         // Store the selected difficulty
         const selectedDifficultyBtn = Array.from(
-          difficultyGrid.querySelectorAll(".difficulty-btn")
+          difficultyGrid.querySelectorAll(".difficulty-btn"),
         ).find((btn) => btn.classList.contains("selected"));
         if (selectedDifficultyBtn) {
           const difficultyText =
@@ -764,11 +776,11 @@ document.addEventListener("DOMContentLoaded", () => {
       modeButtonsContainer1v1.querySelectorAll(".difficulty-btn");
     const timedBtn1v1 = document.getElementById("timed-btn-1v1");
     const timedInputContainer1v1 = document.getElementById(
-      "timed-input-container-1v1"
+      "timed-input-container-1v1",
     );
     const toscoreBtn1v1 = document.getElementById("toscore-btn-1v1");
     const toscoreInputContainer1v1 = document.getElementById(
-      "toscore-input-container-1v1"
+      "toscore-input-container-1v1",
     );
     const freeplayBtn1v1 = document.getElementById("freeplay-btn-1v1");
     const freeplayMessage1v1 = document.getElementById("freeplay-message-1v1");
@@ -813,7 +825,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Goalers buttons for 1v1
   const goalersButtonsContainer1v1 = document.querySelector(
-    ".goalers-buttons-1v1"
+    ".goalers-buttons-1v1",
   );
   if (goalersButtonsContainer1v1) {
     const goalersButtons1v1 =
@@ -850,7 +862,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const modeSelectedBtn1v1 =
         modeButtons1v1 &&
         Array.from(modeButtons1v1.querySelectorAll(".difficulty-btn")).find(
-          (btn) => btn.classList.contains("selected")
+          (btn) => btn.classList.contains("selected"),
         );
 
       let validInput = true;
@@ -948,7 +960,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Get the time played
       const freeplayTimerValue = document.getElementById(
-        "freeplay-timer-value"
+        "freeplay-timer-value",
       );
       const timePlayed = freeplayTimerValue
         ? freeplayTimerValue.textContent
@@ -1049,10 +1061,10 @@ function hide1v1StartUI() {
 function show1v1StartUI() {
   const mode1v1Buttons = document.getElementById("mode-1v1-buttons");
   const timedInputContainer1v1 = document.getElementById(
-    "timed-input-container-1v1"
+    "timed-input-container-1v1",
   );
   const toscoreInputContainer1v1 = document.getElementById(
-    "toscore-input-container-1v1"
+    "toscore-input-container-1v1",
   );
   const freeplayMessage1v1 = document.getElementById("freeplay-message-1v1");
 
@@ -1100,7 +1112,7 @@ function setupGameMode1v1(modeSelectedBtn) {
   const timerContainer = document.getElementById("timer-container");
   const timerValue = document.getElementById("timer-value");
   const freeplayTimerContainer = document.getElementById(
-    "freeplay-timer-container"
+    "freeplay-timer-container",
   );
   const freeplayTimerValue = document.getElementById("freeplay-timer-value");
   const endGameBtn = document.getElementById("end-game-btn");
@@ -1178,7 +1190,7 @@ function hideStartUI() {
   const modeButtons = document.querySelector(".mode-buttons");
   const timedInputContainer = document.getElementById("timed-input-container");
   const toscoreInputContainer = document.getElementById(
-    "toscore-input-container"
+    "toscore-input-container",
   );
   const freeplayMessage = document.getElementById("freeplay-message");
   const startBtn = document.querySelector(".start-btn");
@@ -1196,7 +1208,7 @@ function hideStartUI() {
     difficultyGrid &&
     difficultyGrid.previousElementSibling &&
     difficultyGrid.previousElementSibling.textContent.includes(
-      "Select Difficulty"
+      "Select Difficulty",
     )
   ) {
     difficultyGrid.previousElementSibling.style.display = "none";
@@ -1223,7 +1235,7 @@ function showStartUI() {
   const modeButtons = document.querySelector(".mode-buttons");
   const timedInputContainer = document.getElementById("timed-input-container");
   const toscoreInputContainer = document.getElementById(
-    "toscore-input-container"
+    "toscore-input-container",
   );
   const freeplayMessage = document.getElementById("freeplay-message");
   const startBtn = document.querySelector(".start-btn");
@@ -1241,7 +1253,7 @@ function showStartUI() {
     difficultyGrid &&
     difficultyGrid.previousElementSibling &&
     difficultyGrid.previousElementSibling.textContent.includes(
-      "Select Difficulty"
+      "Select Difficulty",
     )
   ) {
     difficultyGrid.previousElementSibling.style.display = "block";
@@ -1309,7 +1321,7 @@ function setupGameMode(modeSelectedBtn) {
   const timerContainer = document.getElementById("timer-container");
   const timerValue = document.getElementById("timer-value");
   const freeplayTimerContainer = document.getElementById(
-    "freeplay-timer-container"
+    "freeplay-timer-container",
   );
   const freeplayTimerValue = document.getElementById("freeplay-timer-value");
   const endGameBtn = document.getElementById("end-game-btn");

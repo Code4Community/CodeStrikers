@@ -41,7 +41,7 @@ class SoccerBall {
           -this.width / 2,
           -this.height / 2,
           this.width,
-          this.height
+          this.height,
         );
       } else {
         context.drawImage(this.image, this.x, this.y, this.width, this.height);
@@ -121,7 +121,10 @@ class Player {
       }
       console.log(`Player moved right to x: ${this.x}`);
       // If we're on level 4, cause defenders to step asynchronously
-      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+      if (
+        this.game &&
+        typeof this.game.stepDefendersOnPlayerMove === "function"
+      ) {
         this.game.stepDefendersOnPlayerMove();
       }
     } else {
@@ -164,7 +167,10 @@ class Player {
       }
       console.log(`Player moved left to x: ${this.x}`);
       // If we're on level 4, cause defenders to step asynchronously
-      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+      if (
+        this.game &&
+        typeof this.game.stepDefendersOnPlayerMove === "function"
+      ) {
         this.game.stepDefendersOnPlayerMove();
       }
     } else {
@@ -191,7 +197,10 @@ class Player {
       }
       console.log(`Player moved up to y: ${this.y}`);
       // If we're on level 4, cause defenders to step asynchronously
-      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+      if (
+        this.game &&
+        typeof this.game.stepDefendersOnPlayerMove === "function"
+      ) {
         this.game.stepDefendersOnPlayerMove();
       }
     } else {
@@ -218,7 +227,10 @@ class Player {
       }
       console.log(`Player moved down to y: ${this.y}`);
       // If we're on level 4, cause defenders to step asynchronously
-      if (this.game && typeof this.game.stepDefendersOnPlayerMove === "function") {
+      if (
+        this.game &&
+        typeof this.game.stepDefendersOnPlayerMove === "function"
+      ) {
         this.game.stepDefendersOnPlayerMove();
       }
     } else {
@@ -293,10 +305,11 @@ class Defender {
     if (possible.length === 0) return;
     const dir = possible[Math.floor(Math.random() * possible.length)];
 
-    const blockSize = this.game && this.game.player ? this.game.player.speed : 55;
+    const blockSize =
+      this.game && this.game.player ? this.game.player.speed : 55;
     const targetY = Math.max(
       0,
-      Math.min(this.y + dir * blockSize, this.game.height - this.height)
+      Math.min(this.y + dir * blockSize, this.game.height - this.height),
     );
     // compute new block index relative to startY
     const newIndex = Math.round((targetY - this._startY) / blockSize);
@@ -317,11 +330,11 @@ class Defender {
   move(dx, dy) {
     const newX = Math.max(
       0,
-      Math.min(this.x + dx, this.game.width - this.width)
+      Math.min(this.x + dx, this.game.width - this.width),
     );
     const newY = Math.max(
       0,
-      Math.min(this.y + dy, this.game.height - this.height)
+      Math.min(this.y + dy, this.game.height - this.height),
     );
 
     // Only move if not colliding with goaler
@@ -330,7 +343,10 @@ class Defender {
       let blockMovement = false;
 
       // Only enforce border if bot has the ball
-      if (this.game.soccerBall && this.game.soccerBall._possessedBy === "defender") {
+      if (
+        this.game.soccerBall &&
+        this.game.soccerBall._possessedBy === "defender"
+      ) {
         let inGoalArea = false;
         let currentlyInGoalArea = false;
 
@@ -346,20 +362,40 @@ class Defender {
 
         // Check left goal area
         if (this.game.fieldLeft) {
-          if (checkArea(newX, newY, this.width, this.height, this.game.fieldLeft)) {
+          if (
+            checkArea(newX, newY, this.width, this.height, this.game.fieldLeft)
+          ) {
             inGoalArea = true;
           }
-          if (checkArea(this.x, this.y, this.width, this.height, this.game.fieldLeft)) {
+          if (
+            checkArea(
+              this.x,
+              this.y,
+              this.width,
+              this.height,
+              this.game.fieldLeft,
+            )
+          ) {
             currentlyInGoalArea = true;
           }
         }
 
         // Check right goal area
         if (this.game.fieldRight) {
-          if (checkArea(newX, newY, this.width, this.height, this.game.fieldRight)) {
+          if (
+            checkArea(newX, newY, this.width, this.height, this.game.fieldRight)
+          ) {
             inGoalArea = true;
           }
-          if (checkArea(this.x, this.y, this.width, this.height, this.game.fieldRight)) {
+          if (
+            checkArea(
+              this.x,
+              this.y,
+              this.width,
+              this.height,
+              this.game.fieldRight,
+            )
+          ) {
             currentlyInGoalArea = true;
           }
         }
@@ -504,7 +540,7 @@ class Game {
       try {
         if (typeof d.stepOneBlockRandom === "function") {
           d.stepOneBlockRandom().catch((e) =>
-            console.error("Error stepping defender:", e)
+            console.error("Error stepping defender:", e),
           );
         }
       } catch (e) {
@@ -844,14 +880,16 @@ class Game {
     popup.className = "goal-popup";
     popup.innerHTML = `
       <div class="goal-popup-content">
-        <h2 class="goal-unique-effect">${winner === "tie"
-        ? "It's a Tie!"
-        : winner === "player"
-          ? "You Win!"
-          : "Bot Wins!"
-      }</h2>
-        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
-      }</p>
+        <h2 class="goal-unique-effect">${
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+              ? "You Win!"
+              : "Bot Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+          this.defenderScore || 0
+        }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -911,11 +949,11 @@ class Game {
 
       // Hide all timer/score displays
       const targetScoreContainer = document.getElementById(
-        "targetscore-container"
+        "targetscore-container",
       );
       const timerContainer = document.getElementById("timer-container");
       const freeplayTimerContainer = document.getElementById(
-        "freeplay-timer-container"
+        "freeplay-timer-container",
       );
       if (targetScoreContainer) targetScoreContainer.style.display = "none";
       if (timerContainer) timerContainer.style.display = "none";
@@ -949,8 +987,9 @@ class Game {
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">Game Ended!</h2>
         <p>Time Played: ${timePlayed}</p>
-        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
-      }</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+          this.defenderScore || 0
+        }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -1006,11 +1045,11 @@ class Game {
 
       // Hide all timer/score displays
       const targetScoreContainer = document.getElementById(
-        "targetscore-container"
+        "targetscore-container",
       );
       const timerContainer = document.getElementById("timer-container");
       const freeplayTimerContainer = document.getElementById(
-        "freeplay-timer-container"
+        "freeplay-timer-container",
       );
       const endGameBtn = document.getElementById("end-game-btn");
       if (targetScoreContainer) targetScoreContainer.style.display = "none";
@@ -1053,14 +1092,16 @@ class Game {
     popup.className = "goal-popup";
     popup.innerHTML = `
       <div class="goal-popup-content">
-        <h2 class="goal-unique-effect">${winner === "tie"
-        ? "It's a Tie!"
-        : winner === "player"
-          ? "Player Wins!"
-          : "Defender Wins!"
-      }</h2>
-        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
-      }</p>
+        <h2 class="goal-unique-effect">${
+          winner === "tie"
+            ? "It's a Tie!"
+            : winner === "player"
+              ? "Player Wins!"
+              : "Defender Wins!"
+        }</h2>
+        <p>Final Score: ${this.playerScore || 0} - ${
+          this.defenderScore || 0
+        }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -1118,11 +1159,11 @@ class Game {
 
       // Hide all timer/score displays
       const targetScoreContainer = document.getElementById(
-        "targetscore-container"
+        "targetscore-container",
       );
       const timerContainer = document.getElementById("timer-container");
       const freeplayTimerContainer = document.getElementById(
-        "freeplay-timer-container"
+        "freeplay-timer-container",
       );
       if (targetScoreContainer) targetScoreContainer.style.display = "none";
       if (timerContainer) timerContainer.style.display = "none";
@@ -1156,8 +1197,9 @@ class Game {
       <div class="goal-popup-content">
         <h2 class="goal-unique-effect">Game Ended!</h2>
         <p>Time Played: ${timePlayed}</p>
-        <p>Final Score: ${this.playerScore || 0} - ${this.defenderScore || 0
-      }</p>
+        <p>Final Score: ${this.playerScore || 0} - ${
+          this.defenderScore || 0
+        }</p>
         <button id="play-again-btn" class="green-btn">Play Again</button>
         <button id="close-game-over-btn" class="red-btn">Close</button>
       </div>
@@ -1211,11 +1253,11 @@ class Game {
 
       // Hide all timer/score displays
       const targetScoreContainer = document.getElementById(
-        "targetscore-container"
+        "targetscore-container",
       );
       const timerContainer = document.getElementById("timer-container");
       const freeplayTimerContainer = document.getElementById(
-        "freeplay-timer-container"
+        "freeplay-timer-container",
       );
       const endGameBtn = document.getElementById("end-game-btn");
       if (targetScoreContainer) targetScoreContainer.style.display = "none";
@@ -1430,7 +1472,9 @@ class Game {
 
     // Restart button: Clear code and reset player
     document.getElementById("restart-failed-btn").onclick = () => {
-      if (confirm("Are you sure you want to restart? This will clear your code.")) {
+      if (
+        confirm("Are you sure you want to restart? This will clear your code.")
+      ) {
         popup.remove();
         const editor = document.getElementById("game-textbox");
         if (editor) {
@@ -1458,7 +1502,7 @@ class Game {
       x: this.player.x + 10,
       y: this.player.y + 10,
       width: this.player.width - 20,
-      height: this.player.height - 20
+      height: this.player.height - 20,
     };
 
     for (const defender of this.defenders) {
@@ -1466,7 +1510,7 @@ class Game {
         x: defender.x + 10,
         y: defender.y + 10,
         width: defender.width - 20,
-        height: defender.height - 20
+        height: defender.height - 20,
       };
 
       if (
@@ -1539,25 +1583,29 @@ class Game {
     const userFunctions = {
       moveRight: async function () {
         await player.moveRight();
-        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
+        if (game.checkPlayerDefenderCollision())
+          throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveLeft: async function () {
         await player.moveLeft();
-        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
+        if (game.checkPlayerDefenderCollision())
+          throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveUp: async function () {
         await player.moveUp();
-        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
+        if (game.checkPlayerDefenderCollision())
+          throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
       moveDown: async function () {
         await player.moveDown();
-        if (game.checkPlayerDefenderCollision()) throw new Error("Collision with defender");
+        if (game.checkPlayerDefenderCollision())
+          throw new Error("Collision with defender");
         // Add pause after movement
         await new Promise((resolve) => setTimeout(resolve, 300));
       },
@@ -1596,7 +1644,7 @@ class Game {
           const maxIterations = 1000;
           ${safeCode}
         })();
-        `
+        `,
       );
 
       await userCode(
@@ -1606,7 +1654,7 @@ class Game {
         userFunctions.moveDown,
         userFunctions.shootBall,
         userFunctions.inFront,
-        defenders
+        defenders,
       );
     } catch (error) {
       // Don't show alert if it's just a collision (popup already handles it)
@@ -1665,11 +1713,11 @@ class Game {
       if (dx !== 0 || dy !== 0) {
         const newX = Math.max(
           0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
+          Math.min(this.width - this.player.width, this.player.x + dx),
         );
         const newY = Math.max(
           0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
+          Math.min(this.height - this.player.height, this.player.y + dy),
         );
         // Only move if not colliding with goaler
         if (!this.wouldCollideWithGoaler(this.player, newX, newY)) {
@@ -1688,15 +1736,15 @@ class Game {
           0,
           Math.min(
             this.width - this.defenders[0].width,
-            this.defenders[0].x + dx
-          )
+            this.defenders[0].x + dx,
+          ),
         );
         const newY = Math.max(
           0,
           Math.min(
             this.height - this.defenders[0].height,
-            this.defenders[0].y + dy
-          )
+            this.defenders[0].y + dy,
+          ),
         );
         // Only move if not colliding with goaler
         if (!this.wouldCollideWithGoaler(this.defenders[0], newX, newY)) {
@@ -1845,11 +1893,11 @@ class Game {
       if (dx !== 0 || dy !== 0) {
         const newX = Math.max(
           0,
-          Math.min(this.width - this.player.width, this.player.x + dx)
+          Math.min(this.width - this.player.width, this.player.x + dx),
         );
         const newY = Math.max(
           0,
-          Math.min(this.height - this.player.height, this.player.y + dy)
+          Math.min(this.height - this.player.height, this.player.y + dy),
         );
         // Only move if not colliding with goaler
         if (!this.wouldCollideWithGoaler(this.player, newX, newY)) {
@@ -1943,7 +1991,7 @@ class Game {
       if (threat) {
         const distance = Math.sqrt(
           Math.pow(threat.x - leftGoaler.x, 2) +
-          Math.pow(threat.y - leftGoaler.y, 2)
+            Math.pow(threat.y - leftGoaler.y, 2),
         );
 
         if (distance < activationDistance) {
@@ -1982,7 +2030,7 @@ class Game {
       if (threat) {
         const distance = Math.sqrt(
           Math.pow(threat.x - rightGoaler.x, 2) +
-          Math.pow(threat.y - rightGoaler.y, 2)
+            Math.pow(threat.y - rightGoaler.y, 2),
         );
 
         if (distance < activationDistance) {
@@ -1993,12 +2041,12 @@ class Game {
             if (threat.y < rightGoaler.y) {
               rightGoaler.y = Math.max(
                 goalBoxMinY,
-                rightGoaler.y - goalerSpeed
+                rightGoaler.y - goalerSpeed,
               );
             } else if (threat.y > rightGoaler.y) {
               rightGoaler.y = Math.min(
                 goalBoxMaxY,
-                rightGoaler.y + goalerSpeed
+                rightGoaler.y + goalerSpeed,
               );
             }
           }
@@ -2037,11 +2085,11 @@ class Game {
         // Calculate distances
         const teammateDistance = Math.sqrt(
           Math.pow(teammateFeetCenterX - leftGoaler.x, 2) +
-          Math.pow(teammateFeetCenterY - leftGoaler.y, 2)
+            Math.pow(teammateFeetCenterY - leftGoaler.y, 2),
         );
         const threatDistance = Math.sqrt(
           Math.pow(threat.x - leftGoaler.x, 2) +
-          Math.pow(threat.y - leftGoaler.y, 2)
+            Math.pow(threat.y - leftGoaler.y, 2),
         );
 
         // Debug logging
@@ -2061,7 +2109,7 @@ class Game {
         ) {
           console.log(
             "STARTING PASS! stopBallAnimation:",
-            this._stopBallAnimation
+            this._stopBallAnimation,
           );
           // Shoot the ball towards teammate
           this._goalerLeftPassing = true;
@@ -2134,11 +2182,11 @@ class Game {
         // Calculate distances
         const teammateDistance = Math.sqrt(
           Math.pow(teammateFeetCenterX - rightGoaler.x, 2) +
-          Math.pow(teammateFeetCenterY - rightGoaler.y, 2)
+            Math.pow(teammateFeetCenterY - rightGoaler.y, 2),
         );
         const threatDistance = Math.sqrt(
           Math.pow(threat.x - rightGoaler.x, 2) +
-          Math.pow(threat.y - rightGoaler.y, 2)
+            Math.pow(threat.y - rightGoaler.y, 2),
         );
 
         // Pass if teammate is close and threat is far
@@ -2339,7 +2387,7 @@ class Game {
       const oldPos = this._botPositionHistory[0];
       const movementDistance = Math.sqrt(
         Math.pow(botFeetCenterX - oldPos.x, 2) +
-        Math.pow(botFeetCenterY - oldPos.y, 2)
+          Math.pow(botFeetCenterY - oldPos.y, 2),
       );
 
       // If bot hasn't moved at least 15 pixels in 30 frames, it's stuck
@@ -2413,9 +2461,7 @@ class Game {
       escapeY += randomOffset;
 
       // Normalize and apply escape movement
-      const escapeDistance = Math.sqrt(
-        escapeX * escapeX + escapeY * escapeY
-      );
+      const escapeDistance = Math.sqrt(escapeX * escapeX + escapeY * escapeY);
       if (escapeDistance > 0) {
         const moveX = (escapeX / escapeDistance) * botSpeed * 1.5; // Move faster when escaping
         const moveY = (escapeY / escapeDistance) * botSpeed * 1.5;
@@ -2441,7 +2487,7 @@ class Game {
       const playerDx = playerCenterX - botFeetCenterX;
       const playerDy = playerCenterY - botFeetCenterY;
       const playerDistance = Math.sqrt(
-        playerDx * playerDx + playerDy * playerDy
+        playerDx * playerDx + playerDy * playerDy,
       );
 
       // Impossible difficulty: Defensive pass if player gets too close
@@ -2630,13 +2676,13 @@ class Game {
       // OR be within reasonable shooting range horizontally aligned with goal
       const goalLeftEdge = this.fieldLeft.x;
       const goalRightEdge = this.fieldLeft.x + this.fieldLeft.width;
-      const isInFrontOfGoal = botFeetCenterX > (goalRightEdge + 20); // Reduced from 50 to 20
-      const isAlignedWithGoal = botFeetCenterX > (goalRightEdge - 30); // Within 30px of goal opening
+      const isInFrontOfGoal = botFeetCenterX > goalRightEdge + 20; // Reduced from 50 to 20
+      const isAlignedWithGoal = botFeetCenterX > goalRightEdge - 30; // Within 30px of goal opening
 
       // Check if bot is at the edge (top or bottom) OR goal box edges OR inside goal box
       const edgeThreshold = 60; // Distance from edge to be considered "at edge"
       const isAtTopEdge = botFeetCenterY < edgeThreshold;
-      const isAtBottomEdge = botFeetCenterY > (this.height - edgeThreshold);
+      const isAtBottomEdge = botFeetCenterY > this.height - edgeThreshold;
 
       const goalBoxTop = this.fieldLeft.y;
       const goalBoxBottom = this.fieldLeft.y + this.fieldLeft.height;
@@ -2646,10 +2692,19 @@ class Game {
       // Check if inside goal box (should back up if we have the ball inside)
       const isInsideGoalBox = botFeetCenterX < goalRightEdge + 10;
 
-      const isAtEdge = isAtTopEdge || isAtBottomEdge || isAtGoalTopEdge || isAtGoalBottomEdge || isInsideGoalBox;
+      const isAtEdge =
+        isAtTopEdge ||
+        isAtBottomEdge ||
+        isAtGoalTopEdge ||
+        isAtGoalBottomEdge ||
+        isInsideGoalBox;
 
       // If at edge and close to goal, back up to create space instead of shooting
-      if (isAtEdge && goalDistance < shootDistance && (isInFrontOfGoal || isAlignedWithGoal)) {
+      if (
+        isAtEdge &&
+        goalDistance < shootDistance &&
+        (isInFrontOfGoal || isAlignedWithGoal)
+      ) {
         // Back up toward center of field
         const centerY = this.height / 2;
         const backupX = 1; // Move slightly right (away from goal)
@@ -2663,7 +2718,10 @@ class Game {
       }
 
       // Shoot when close to goal AND in proper shooting position AND not at edge
-      if (goalDistance < shootDistance && (isInFrontOfGoal || isAlignedWithGoal)) {
+      if (
+        goalDistance < shootDistance &&
+        (isInFrontOfGoal || isAlignedWithGoal)
+      ) {
         // Shoot logic - avoid goaler if present in goaler mode
         if (!this._botShooting) {
           this.isBallRolling = true;
@@ -2707,7 +2765,7 @@ class Game {
               // Keep ball in bounds vertically
               shootBall.y = Math.max(
                 0,
-                Math.min(shootBall.y, game.height - shootBall.height)
+                Math.min(shootBall.y, game.height - shootBall.height),
               );
               shootSpeed *= 0.97;
               frameCount++;
@@ -2748,7 +2806,7 @@ class Game {
         // But if bot is far from ball, try to intercept path to goal
         const botToPlayerDist = Math.sqrt(
           (playerCenterX - botFeetCenterX) ** 2 +
-          (playerCenterY - botFeetCenterY) ** 2
+            (playerCenterY - botFeetCenterY) ** 2,
         );
 
         const interceptThreshold = difficulty === "hard" ? 180 : 150;
@@ -2765,7 +2823,7 @@ class Game {
       const targetDx = targetX - botFeetCenterX;
       const targetDy = targetY - botFeetCenterY;
       const targetDistance = Math.sqrt(
-        targetDx * targetDx + targetDy * targetDy
+        targetDx * targetDx + targetDy * targetDy,
       );
 
       if (targetDistance > 5) {
@@ -2884,7 +2942,7 @@ function startGame() {
         const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
         escaped = escaped.replace(
           fnRegex,
-          `<span class="token-function">$1</span>`
+          `<span class="token-function">$1</span>`,
         );
       });
       escaped = escaped.replace(/\(/g, `<span class="token-parens">(</span>`);
@@ -2965,7 +3023,7 @@ function startGame() {
         const walker = document.createTreeWalker(
           editor,
           NodeFilter.SHOW_TEXT,
-          null
+          null,
         );
 
         let node;
@@ -3003,7 +3061,7 @@ function startGame() {
             const walker2 = document.createTreeWalker(
               editor,
               NodeFilter.SHOW_TEXT,
-              null
+              null,
             );
 
             let currentPos = 0;

@@ -1,176 +1,270 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Strikers</title>
+    <link rel="icon" type="image/png" href="assets/soccer.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Code Strikers</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
+  <body>
+    <img src="assets/attacker.png" alt="attacker" id="attacker" />
+    <img src="assets/defender.png" alt="defender" id="defender" />
+    <img
+      src="assets/soccer.png"
+      alt="soccer ball"
+      id="soccer-ball"
+      style="display: none"
+    />
+    <img
+      src="assets/soccer_goal.png"
+      alt="soccer goal"
+      id="soccer-goal"
+      style="display: none"
+    />
+    <div class="page-title"><span>Code Strikers</span></div>
+    <div class="row">
+      <canvas id="canvas1"></canvas>
+      <div class="side-panel">
+        <div class="level-selector">
+          <label for="level-dropdown">Level:</label>
+          <select id="level-dropdown">
+            <option value="1">Level 1</option>
+            <option value="2">Level 2</option>
+            <option value="3">Level 3</option>
+            <option value="4">Level 4</option>
 
-<body>
-  <img src="assets/attacker.png" alt="attacker" id="attacker" />
-  <img src="assets/defender.png" alt="defender" id="defender" />
-  <img src="assets/soccer.png" alt="soccer ball" id="soccer-ball" style="display: none" />
-  <img src="assets/soccer_goal.png" alt="soccer goal" id="soccer-goal" style="display: none" />
-  <div class="page-title"><span>Code Strikers</span></div>
-  <div class="row">
-    <canvas id="canvas1"></canvas>
-    <div class="side-panel">
-      <div class="level-selector">
-        <label for="level-dropdown">Level:</label>
-        <select id="level-dropdown">
-          <option value="1">Level 1</option>
-          <option value="2">Level 2</option>
-          <option value="3">Level 3</option>
-          <option value="4">Level 4</option>
-
-          <option value="bot">Bot</option>
-          <option value="6">1v1</option>
-        </select>
-      </div>
-      <div class="difficulty-buttons">
-        <div style="
+            <option value="bot">Bot</option>
+            <option value="6">1v1</option>
+          </select>
+        </div>
+        <div class="difficulty-buttons">
+          <div
+            style="
               text-align: center;
               font-size: 0.82em;
               font-weight: 600;
               color: #1976d2;
               margin-bottom: 4px;
-            ">
-          Select Difficulty
-        </div>
-        <div class="difficulty-grid">
-          <button class="difficulty-btn easy-btn">Easy</button>
-          <button class="difficulty-btn hard-btn">Hard</button>
-          <button class="difficulty-btn medium-btn">Medium</button>
-          <button class="difficulty-btn impossible-btn">Impossible</button>
-        </div>
-        <div style="
+            "
+          >
+            Select Difficulty
+          </div>
+          <div class="difficulty-grid">
+            <button class="difficulty-btn easy-btn">Easy</button>
+            <button class="difficulty-btn hard-btn">Hard</button>
+            <button class="difficulty-btn medium-btn">Medium</button>
+            <button class="difficulty-btn impossible-btn">Impossible</button>
+          </div>
+          <div
+            style="
               text-align: center;
               font-size: 0.82em;
               font-weight: 600;
               color: #1976d2;
               margin-bottom: 4px;
               margin-top: 4px;
-            ">
-          Select Game Mode
-        </div>
-        <div class="mode-buttons">
-          <button class="difficulty-btn timed-btn" id="timed-btn">
-            Timed
-          </button>
-          <button class="difficulty-btn toscore-btn" id="toscore-btn">
-            To Score
-          </button>
-          <button class="difficulty-btn freeplay-btn" id="freeplay-btn">
-            Freeplay
-          </button>
-        </div>
-        <div id="freeplay-message" style="
+            "
+          >
+            Select Game Mode
+          </div>
+          <div class="mode-buttons">
+            <button class="difficulty-btn timed-btn" id="timed-btn">
+              Timed
+            </button>
+            <button class="difficulty-btn toscore-btn" id="toscore-btn">
+              To Score
+            </button>
+            <button class="difficulty-btn freeplay-btn" id="freeplay-btn">
+              Freeplay
+            </button>
+          </div>
+          <div
+            id="freeplay-message"
+            style="
               display: none;
               margin: 3px 0 0 0;
               text-align: center;
               color: #1976d2;
               font-size: 0.82em;
               font-weight: 500;
-            ">
-          No time or score limit
-        </div>
-        <div id="timed-input-container" style="display: none; margin: 3px 0 0 0; text-align: center">
-          <input type="number" id="timed-minutes" min="1" max="20" value="1" class="timed-minutes-input" />
-          <span class="timed-minutes-label">minutes</span>
-        </div>
-        <div id="toscore-input-container" style="display: none; margin: 3px 0 0 0; text-align: center">
-          <input type="number" id="toscore-score" min="1" max="100" placeholder="Enter a score"
-            class="toscore-score-input" style="width: 120px" />
-        </div>
-        <div style="
+            "
+          >
+            No time or score limit
+          </div>
+          <div
+            id="timed-input-container"
+            style="display: none; margin: 3px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="timed-minutes"
+              min="1"
+              max="20"
+              value="1"
+              class="timed-minutes-input"
+            />
+            <span class="timed-minutes-label">minutes</span>
+          </div>
+          <div
+            id="toscore-input-container"
+            style="display: none; margin: 3px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="toscore-score"
+              min="1"
+              max="100"
+              placeholder="Enter a score"
+              class="toscore-score-input"
+              style="width: 120px"
+            />
+          </div>
+          <div
+            style="
               text-align: center;
               font-size: 0.82em;
               font-weight: 600;
               color: #1976d2;
               margin-top: 4px;
               margin-bottom: 4px;
-            ">
-          Goalers
+            "
+          >
+            Goalers
+          </div>
+          <div class="goalers-buttons">
+            <button
+              class="difficulty-btn goalers-off-btn red-btn"
+              id="goalers-off-btn"
+              disabled
+            >
+              Off
+            </button>
+            <button
+              class="difficulty-btn goalers-on-btn green-btn"
+              id="goalers-on-btn"
+            >
+              On
+            </button>
+          </div>
+          <button class="difficulty-btn start-btn">Start</button>
         </div>
-        <div class="goalers-buttons">
-          <button class="difficulty-btn goalers-off-btn red-btn" id="goalers-off-btn" disabled>
-            Off
-          </button>
-          <button class="difficulty-btn goalers-on-btn green-btn" id="goalers-on-btn">
-            On
-          </button>
-        </div>
-        <button class="difficulty-btn start-btn">Start</button>
-      </div>
 
-      <div class="difficulty-buttons" id="mode-1v1-buttons" style="display: none">
-        <div style="
+        <div
+          class="difficulty-buttons"
+          id="mode-1v1-buttons"
+          style="display: none"
+        >
+          <div
+            style="
               text-align: center;
               font-size: 1.08em;
               font-weight: 600;
               color: #1976d2;
               margin-bottom: 17px;
-            ">
-          Select Game Mode
-        </div>
-        <div class="mode-buttons-1v1">
-          <button class="difficulty-btn timed-btn" id="timed-btn-1v1">
-            Timed
-          </button>
-          <button class="difficulty-btn toscore-btn" id="toscore-btn-1v1">
-            To Score
-          </button>
-          <button class="difficulty-btn freeplay-btn" id="freeplay-btn-1v1">
-            Freeplay
-          </button>
-        </div>
-        <div id="freeplay-message-1v1" style="
+            "
+          >
+            Select Game Mode
+          </div>
+          <div class="mode-buttons-1v1">
+            <button class="difficulty-btn timed-btn" id="timed-btn-1v1">
+              Timed
+            </button>
+            <button class="difficulty-btn toscore-btn" id="toscore-btn-1v1">
+              To Score
+            </button>
+            <button class="difficulty-btn freeplay-btn" id="freeplay-btn-1v1">
+              Freeplay
+            </button>
+          </div>
+          <div
+            id="freeplay-message-1v1"
+            style="
               display: none;
               margin: 10px 0 0 0;
               text-align: center;
               color: #1976d2;
               font-size: 1.08em;
               font-weight: 500;
-            ">
-          No time or score limit
-        </div>
-        <div id="timed-input-container-1v1" style="display: none; margin: 12px 0 0 0; text-align: center">
-          <input type="number" id="timed-minutes-1v1" min="1" max="20" value="1" class="timed-minutes-input" />
-          <span class="timed-minutes-label">minutes</span>
-        </div>
-        <div id="toscore-input-container-1v1" style="display: none; margin: 12px 0 0 0; text-align: center">
-          <input type="number" id="toscore-score-1v1" min="1" max="100" placeholder="Enter a score"
-            class="toscore-score-input" style="width: 120px" />
-        </div>
-        <div style="
+            "
+          >
+            No time or score limit
+          </div>
+          <div
+            id="timed-input-container-1v1"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="timed-minutes-1v1"
+              min="1"
+              max="20"
+              value="1"
+              class="timed-minutes-input"
+            />
+            <span class="timed-minutes-label">minutes</span>
+          </div>
+          <div
+            id="toscore-input-container-1v1"
+            style="display: none; margin: 12px 0 0 0; text-align: center"
+          >
+            <input
+              type="number"
+              id="toscore-score-1v1"
+              min="1"
+              max="100"
+              placeholder="Enter a score"
+              class="toscore-score-input"
+              style="width: 120px"
+            />
+          </div>
+          <div
+            style="
               text-align: center;
               font-size: 1.08em;
               font-weight: 600;
               color: #1976d2;
               margin-top: 17px;
               margin-bottom: 12px;
-            ">
-          Goalers
-        </div>
-        <div class="goalers-buttons-1v1">
-          <button class="difficulty-btn goalers-off-btn red-btn" id="goalers-off-btn-1v1" disabled>
-            Off
+            "
+          >
+            Goalers
+          </div>
+          <div class="goalers-buttons-1v1">
+            <button
+              class="difficulty-btn goalers-off-btn red-btn"
+              id="goalers-off-btn-1v1"
+              disabled
+            >
+              Off
+            </button>
+            <button
+              class="difficulty-btn goalers-on-btn green-btn"
+              id="goalers-on-btn-1v1"
+            >
+              On
+            </button>
+          </div>
+          <button class="difficulty-btn start-btn" id="start-btn-1v1">
+            Start
           </button>
-          <button class="difficulty-btn goalers-on-btn green-btn" id="goalers-on-btn-1v1">
-            On
-          </button>
         </div>
-        <button class="difficulty-btn start-btn" id="start-btn-1v1">
-          Start
-        </button>
-      </div>
 
-      <pre id="game-textbox" contenteditable="false" spellcheck="false" data-placeholder="Type Code Here..."></pre>
-      <div id="scoreboard" style="display: none">
-        <div id="freeplay-timer-container" style="display: none; text-align: center; margin-bottom: 8px">
-          <span id="freeplay-timer-value" style="
+        <pre
+          id="game-textbox"
+          contenteditable="false"
+          spellcheck="false"
+          data-placeholder="Type Code Here..."
+        ></pre>
+        <div id="scoreboard" style="display: none">
+          <div
+            id="freeplay-timer-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="freeplay-timer-value"
+              style="
                 font-size: 1.3em;
                 color: #388e3c;
                 font-weight: bold;
@@ -178,10 +272,17 @@
                 border-radius: 8px;
                 padding: 8px 18px;
                 box-shadow: 0 2px 8px rgba(56, 142, 60, 0.1);
-              ">0:00</span>
-        </div>
-        <div id="timer-container" style="display: none; text-align: center; margin-bottom: 8px">
-          <span id="timer-label" style="
+              "
+              >0:00</span
+            >
+          </div>
+          <div
+            id="timer-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="timer-label"
+              style="
                 font-size: 1.3em;
                 color: #388e3c;
                 font-weight: bold;
@@ -189,10 +290,17 @@
                 border-radius: 8px;
                 padding: 8px 18px;
                 box-shadow: 0 2px 8px rgba(56, 142, 60, 0.1);
-              ">Time Left: <span id="timer-value">0:00</span></span>
-        </div>
-        <div id="targetscore-container" style="display: none; text-align: center; margin-bottom: 8px">
-          <span id="targetscore-label" style="
+              "
+              >Time Left: <span id="timer-value">0:00</span></span
+            >
+          </div>
+          <div
+            id="targetscore-container"
+            style="display: none; text-align: center; margin-bottom: 8px"
+          >
+            <span
+              id="targetscore-label"
+              style="
                 font-size: 1.1em;
                 color: #d32f2f;
                 font-weight: bold;
@@ -200,172 +308,175 @@
                 border-radius: 8px;
                 padding: 6px 14px;
                 box-shadow: 0 2px 8px rgba(211, 47, 47, 0.1);
-              ">Target Score: <span id="targetscore-value">0</span></span>
+              "
+              >Target Score: <span id="targetscore-value">0</span></span
+            >
+          </div>
+          <div class="score-row">
+            <span class="score-label">Player</span>
+            <span id="score-player" class="score-value">0</span>
+            <span class="score-sep">-</span>
+            <span id="score-defender" class="score-value">0</span>
+            <span class="score-label">Defender</span>
+          </div>
         </div>
-        <div class="score-row">
-          <span class="score-label">Player</span>
-          <span id="score-player" class="score-value">0</span>
-          <span class="score-sep">-</span>
-          <span id="score-defender" class="score-value">0</span>
-          <span class="score-label">Defender</span>
-        </div>
-      </div>
 
-      <button id="end-game-btn" class="difficulty-btn red-btn" style="display: none; margin: 10px auto 0">
-        End Game
-      </button>
+        <button
+          id="end-game-btn"
+          class="difficulty-btn red-btn"
+          style="display: none; margin: 10px auto 0"
+        >
+          End Game
+        </button>
 
-      <div id="action-buttons" style="display: flex">
-        <div class="button-row">
-          <button id="run-btn" class="green-btn">Run</button>
-          <button id="stop-btn" class="red-btn" style="display: none">
-            Stop
-          </button>
-          <button id="clear-btn" class="red-btn">Clear</button>
-        </div>
-        <div class="level-nav-row">
-          <button id="back-level-btn" class="nav-btn">◀ Back Level</button>
-          <button id="next-level-btn" class="nav-btn">Next Level ▶</button>
+        <div id="action-buttons" style="display: flex">
+          <div class="button-row">
+            <button id="run-btn" class="green-btn">Run</button>
+            <button id="stop-btn" class="red-btn" style="display: none">
+              Stop
+            </button>
+            <button id="clear-btn" class="red-btn">Clear</button>
+          </div>
+          <div class="level-nav-row">
+            <button id="back-level-btn" class="nav-btn">◀ Back Level</button>
+            <button id="next-level-btn" class="nav-btn">Next Level ▶</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="instructions">
-    <h1>⚽ Game Instructions</h1>
+    <div class="instructions">
+      <h1>⚽ Game Instructions</h1>
 
-    <div class="section">
-      <h2>Player Functions</h2>
-      <ul>
-        <li><code>moveRight()</code> – Move 1 space right</li>
-        <li><code>moveLeft()</code> – Move 1 space left</li>
-        <li><code>moveUp()</code> – Move 1 space up</li>
-        <li><code>moveDown()</code> – Move 1 space down</li>
-        <li><code>shootBall()</code> – Shoot ball 4 spaces right</li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <h2>Controls</h2>
-      <ul>
-        <li>
-          <strong>Player 1:</strong> <code>W</code> (up),
-          <code>A</code> (left), <code>S</code> (down),
-          <code>D</code> (right), <code>SPACE</code> to shoot
-        </li>
-        <li>
-          <strong>Player 2 (1v1 mode):</strong> Arrow Keys (<code>↑</code>
-          <code>↓</code> <code>←</code> <code>→</code>), <code>M</code> to
-          shoot
-        </li>
-        <li>
-          <strong>Shooting:</strong> Press and hold the shoot button to charge
-          power, release to shoot
-        </li>
-        <li>
-          The power bar shows your shot strength - longer hold = stronger
-          shot!
-        </li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <h2>Levels</h2>
-      <div class="level">
-        <h3>Level 1</h3>
-        <p>
-          Move right until close to the goal and shoot to score. No defenders.
-        </p>
-      </div>
-
-      <div class="level">
-        <h3>Level 2</h3>
-        <p>
-          Two defenders in front of the goal. Move around them, then shoot to
-          score (no loops required).
-        </p>
-      </div>
-
-      <div class="level">
-        <h3>Level 3</h3>
-        <p>
-          More difficult level introducing <code>while</code> loops and
-          <code>inFront()</code>. Move around defenders to score.
-        </p>
-      </div>
-
-      <div class="level">
-        <h3>Level 4</h3>
-        <p>
-          Defenders move up and down. Time your movement and shoot to score!
-        </p>
-      </div>
-
-
-    </div>
-
-    <div class="section">
-      <h2>Game Modes</h2>
-
-      <div class="level">
-        <h3>🤖 Bot Mode</h3>
-        <p>Play against an AI-controlled opponent! Select your difficulty:</p>
+      <div class="section">
+        <h2>Player Functions</h2>
         <ul>
-          <li><strong>Easy:</strong> Slow bot with basic shooting</li>
-          <li>
-            <strong>Medium:</strong> Faster bot with improved shooting range
-          </li>
-          <li><strong>Hard:</strong> Quick bot that can dodge your shots</li>
-          <li>
-            <strong>Impossible:</strong> Master bot with advanced tactics and
-            feints
-          </li>
+          <li><code>moveRight()</code> – Move 1 space right</li>
+          <li><code>moveLeft()</code> – Move 1 space left</li>
+          <li><code>moveUp()</code> – Move 1 space up</li>
+          <li><code>moveDown()</code> – Move 1 space down</li>
+          <li><code>shootBall()</code> – Shoot ball 4 spaces right</li>
         </ul>
-        <p>Choose a game mode:</p>
+      </div>
+
+      <div class="section">
+        <h2>Controls</h2>
         <ul>
           <li>
-            <strong>Timed:</strong> Score as many goals as possible before
-            time runs out
+            <strong>Player 1:</strong> <code>W</code> (up),
+            <code>A</code> (left), <code>S</code> (down),
+            <code>D</code> (right), <code>SPACE</code> to shoot
           </li>
           <li>
-            <strong>To Score:</strong> First to reach the target score wins
+            <strong>Player 2 (1v1 mode):</strong> Arrow Keys (<code>↑</code>
+            <code>↓</code> <code>←</code> <code>→</code>), <code>M</code> to
+            shoot
           </li>
           <li>
-            <strong>Freeplay:</strong> Practice with no limits - end the game
-            manually when ready
+            <strong>Shooting:</strong> Press and hold the shoot button to charge
+            power, release to shoot
+          </li>
+          <li>
+            The power bar shows your shot strength - longer hold = stronger
+            shot!
           </li>
         </ul>
       </div>
 
-      <div class="level">
-        <h3>👥 1v1 Mode</h3>
-        <p>
-          Challenge a friend in local multiplayer! Player 1 uses
-          <code>WASD</code> keys and shoots with <code>SPACE</code>. Player 2
-          uses <strong>Arrow Keys</strong> and shoots with <code>M</code>.
-        </p>
-        <p>Select the same game modes as Bot mode:</p>
-        <ul>
-          <li>
-            <strong>Timed:</strong> Compete to score more goals within the
-            time limit
-          </li>
-          <li>
-            <strong>To Score:</strong> Race to reach the winning score first
-          </li>
-          <li>
-            <strong>Freeplay:</strong> Play casually and end when you're ready
-          </li>
-        </ul>
+      <div class="section">
+        <h2>Levels</h2>
+        <div class="level">
+          <h3>Level 1</h3>
+          <p>
+            Move right until close to the goal and shoot to score. No defenders.
+          </p>
+        </div>
+
+        <div class="level">
+          <h3>Level 2</h3>
+          <p>
+            Two defenders in front of the goal. Move around them, then shoot to
+            score (no loops required).
+          </p>
+        </div>
+
+        <div class="level">
+          <h3>Level 3</h3>
+          <p>
+            More difficult level introducing <code>while</code> loops and
+            <code>inFront()</code>. Move around defenders to score.
+          </p>
+        </div>
+
+        <div class="level">
+          <h3>Level 4</h3>
+          <p>
+            Defenders move up and down. Time your movement and shoot to score!
+          </p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Game Modes</h2>
+
+        <div class="level">
+          <h3>🤖 Bot Mode</h3>
+          <p>Play against an AI-controlled opponent! Select your difficulty:</p>
+          <ul>
+            <li><strong>Easy:</strong> Slow bot with basic shooting</li>
+            <li>
+              <strong>Medium:</strong> Faster bot with improved shooting range
+            </li>
+            <li><strong>Hard:</strong> Quick bot that can dodge your shots</li>
+            <li>
+              <strong>Impossible:</strong> Master bot with advanced tactics and
+              feints
+            </li>
+          </ul>
+          <p>Choose a game mode:</p>
+          <ul>
+            <li>
+              <strong>Timed:</strong> Score as many goals as possible before
+              time runs out
+            </li>
+            <li>
+              <strong>To Score:</strong> First to reach the target score wins
+            </li>
+            <li>
+              <strong>Freeplay:</strong> Practice with no limits - end the game
+              manually when ready
+            </li>
+          </ul>
+        </div>
+
+        <div class="level">
+          <h3>👥 1v1 Mode</h3>
+          <p>
+            Challenge a friend in local multiplayer! Player 1 uses
+            <code>WASD</code> keys and shoots with <code>SPACE</code>. Player 2
+            uses <strong>Arrow Keys</strong> and shoots with <code>M</code>.
+          </p>
+          <p>Select the same game modes as Bot mode:</p>
+          <ul>
+            <li>
+              <strong>Timed:</strong> Compete to score more goals within the
+              time limit
+            </li>
+            <li>
+              <strong>To Score:</strong> Race to reach the winning score first
+            </li>
+            <li>
+              <strong>Freeplay:</strong> Play casually and end when you're ready
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Load JavaScript files in order -->
-  <script src="levels.js"></script>
-  <script src="sound.js"></script>
-  <script src="main.js"></script>
-  <script src="ui.js"></script>
-</body>
-
+    <!-- Load JavaScript files in order -->
+    <script src="levels.js"></script>
+    <script src="sound.js"></script>
+    <script src="main.js"></script>
+    <script src="ui.js"></script>
+  </body>
 </html>
