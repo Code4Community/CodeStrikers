@@ -1148,15 +1148,16 @@ function setupGameMode1v1(modeSelectedBtn) {
         freeplayTimerValue.textContent = formatTime(secondsElapsed);
       }, 1000);
     }
-    if (endGameBtn) endGameBtn.style.display = "block";
   } else {
     if (freeplayTimerContainer) {
       freeplayTimerContainer.style.display = "none";
       if (window._freeplayTimerInterval)
         clearInterval(window._freeplayTimerInterval);
     }
-    if (endGameBtn) endGameBtn.style.display = "none";
   }
+
+  // Show End Game button for all modes
+  if (endGameBtn) endGameBtn.style.display = "block";
 
   if (modeSelectedBtn && modeSelectedBtn.id === "timed-btn-1v1") {
     if (timerContainer && timerValue) {
@@ -1357,15 +1358,16 @@ function setupGameMode(modeSelectedBtn) {
         freeplayTimerValue.textContent = formatTime(secondsElapsed);
       }, 1000);
     }
-    if (endGameBtn) endGameBtn.style.display = "block";
   } else {
     if (freeplayTimerContainer) {
       freeplayTimerContainer.style.display = "none";
       if (window._freeplayTimerInterval)
         clearInterval(window._freeplayTimerInterval);
     }
-    if (endGameBtn) endGameBtn.style.display = "none";
   }
+
+  // Show End Game button for all modes
+  if (endGameBtn) endGameBtn.style.display = "block";
 
   if (modeSelectedBtn && modeSelectedBtn.id === "timed-btn") {
     if (timerContainer && timerValue) {
