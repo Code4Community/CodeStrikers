@@ -1182,6 +1182,7 @@ function hideStartUI() {
   );
   const freeplayMessage = document.getElementById("freeplay-message");
   const startBtn = document.querySelector(".start-btn");
+  const goalersButtons = document.querySelector(".goalers-buttons");
 
   if (difficultyGrid) difficultyGrid.style.display = "none";
   if (modeButtons) modeButtons.style.display = "none";
@@ -1189,6 +1190,7 @@ function hideStartUI() {
   if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
   if (freeplayMessage) freeplayMessage.style.display = "none";
   if (startBtn) startBtn.style.display = "none";
+  if (goalersButtons) goalersButtons.style.display = "none";
 
   if (
     difficultyGrid &&
@@ -1206,6 +1208,14 @@ function hideStartUI() {
   ) {
     modeButtons.previousElementSibling.style.display = "none";
   }
+  // Hide Goalers label
+  if (
+    goalersButtons &&
+    goalersButtons.previousElementSibling &&
+    goalersButtons.previousElementSibling.textContent.includes("Goalers")
+  ) {
+    goalersButtons.previousElementSibling.style.display = "none";
+  }
 }
 
 function showStartUI() {
@@ -1217,6 +1227,7 @@ function showStartUI() {
   );
   const freeplayMessage = document.getElementById("freeplay-message");
   const startBtn = document.querySelector(".start-btn");
+  const goalersButtons = document.querySelector(".goalers-buttons");
 
   if (difficultyGrid) difficultyGrid.style.display = "grid";
   if (modeButtons) modeButtons.style.display = "flex";
@@ -1224,6 +1235,7 @@ function showStartUI() {
   if (toscoreInputContainer) toscoreInputContainer.style.display = "none";
   if (freeplayMessage) freeplayMessage.style.display = "none";
   if (startBtn) startBtn.style.display = "block";
+  if (goalersButtons) goalersButtons.style.display = "flex";
 
   if (
     difficultyGrid &&
@@ -1240,6 +1252,14 @@ function showStartUI() {
     modeButtons.previousElementSibling.textContent.includes("Select Game Mode")
   ) {
     modeButtons.previousElementSibling.style.display = "block";
+  }
+  // Show Goalers label
+  if (
+    goalersButtons &&
+    goalersButtons.previousElementSibling &&
+    goalersButtons.previousElementSibling.textContent.includes("Goalers")
+  ) {
+    goalersButtons.previousElementSibling.style.display = "block";
   }
 
   // Unselect all difficulty buttons
