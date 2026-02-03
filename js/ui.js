@@ -22,9 +22,18 @@ function checkSyntaxErrors(code) {
 
     if (trimmedLine.length === 0) return;
 
-    // Check for repeat syntax
+    // Check for repeat(int): syntax - int = number of times to loop
     if (trimmedLine.match(/^repeat\s*\(\s*\d+\s*\)\s*:$/)) {
       expectingIndent = true;
+      return;
+    }
+    if (trimmedLine.match(/^repeat\s*\(/)) {
+      if (!trimmedLine.match(/^repeat\s*\(\s*\d+\s*\)\s*:$/)) {
+        errors.push({
+          line: index + 1,
+          message: `repeat() requires an integer argument, e.g. repeat(5):`,
+        });
+      }
       return;
     }
 
