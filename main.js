@@ -1623,7 +1623,60 @@ class Game {
     };
 
     try {
-      let safeCode = code
+      // Convert repeat(N): syntax to for loops
+      let processedCode = code;
+      const lines = processedCode.split("\n");
+      const result = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+        const leadingSpaces = line.search(/\S|$/);
+
+        // Check if this is a repeat line
+        const repeatMatch = trimmedLine.match(/^repeat\s*\(\s*(\d+)\s*\)\s*:$/);
+        if (repeatMatch) {
+          const count = repeatMatch[1];
+          result.push(
+            " ".repeat(leadingSpaces) + `for(let i = 0; i < ${count}; i++) {`,
+          );
+
+          // Process indented block
+          i++;
+          while (i < lines.length) {
+            const nextLine = lines[i];
+            const nextTrimmed = nextLine.trim();
+            const nextLeading = nextLine.search(/\S|$/);
+
+            // If line is empty, skip it
+            if (nextTrimmed.length === 0) {
+              i++;
+              continue;
+            }
+
+            // If line is not indented or less indented, we're done with this block
+            if (nextLeading <= leadingSpaces) {
+              break;
+            }
+
+            // Add the indented line (remove 2 spaces since we're using {})
+            result.push(" ".repeat(Math.max(0, nextLeading - 2)) + nextTrimmed);
+            i++;
+          }
+
+          result.push(" ".repeat(leadingSpaces) + "}");
+          continue;
+        }
+
+        result.push(line);
+        i++;
+      }
+
+      processedCode = result.join("\n");
+
+      // Now add await to movement functions
+      let safeCode = processedCode
         .replace(/([^a-zA-Z0-9_])?moveRight\s*\(/g, "$1await moveRight(")
         .replace(/([^a-zA-Z0-9_])?moveLeft\s*\(/g, "$1await moveLeft(")
         .replace(/([^a-zA-Z0-9_])?moveUp\s*\(/g, "$1await moveUp(")

@@ -2,15 +2,60 @@
 // UI.JS - User Interface Controls and Event Handlers
 // ============================================
 
-const FUNCTIONS = ["moveRight", "moveLeft", "moveUp", "moveDown", "shootBall"];
+const FUNCTIONS = [
+  "moveRight",
+  "moveLeft",
+  "moveUp",
+  "moveDown",
+  "shootBall",
+  "repeat",
+];
 
 function checkSyntaxErrors(code) {
   const lines = code.split("\n");
   const errors = [];
+  let expectingIndent = false;
 
   lines.forEach((line, index) => {
     const trimmedLine = line.trim();
+    const leadingSpaces = line.search(/\S|$/);
+
     if (trimmedLine.length === 0) return;
+
+    // Check for repeat syntax
+    if (trimmedLine.match(/^repeat\s*\(\s*\d+\s*\)\s*:$/)) {
+      expectingIndent = true;
+      return;
+    }
+
+    // Check if we're in an indented block after repeat
+    if (expectingIndent) {
+      if (leadingSpaces >= 2) {
+        // This is correctly indented
+        let isValid = false;
+        for (const func of FUNCTIONS) {
+          if (func === "repeat") continue; // Skip repeat in nested check
+          if (trimmedLine === `${func}()`) {
+            isValid = true;
+            break;
+          }
+        }
+        if (!isValid && !trimmedLine.match(/^repeat\s*\(\s*\d+\s*\)\s*:$/)) {
+          errors.push({
+            line: index + 1,
+            message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.filter(
+              (f) => f !== "repeat",
+            )
+              .map((f) => f + "()")
+              .join(", ")}`,
+          });
+        }
+        return;
+      } else {
+        // No longer indented, exit indent block
+        expectingIndent = false;
+      }
+    }
 
     // Skip lines that are just closing braces
     if (trimmedLine === "}") return;
@@ -32,6 +77,7 @@ function checkSyntaxErrors(code) {
 
     let isValid = false;
     for (const func of FUNCTIONS) {
+      if (func === "repeat") continue; // Skip repeat in regular check
       if (trimmedLine === `${func}()`) {
         isValid = true;
         break;
@@ -41,9 +87,11 @@ function checkSyntaxErrors(code) {
     if (!isValid) {
       errors.push({
         line: index + 1,
-        message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.map(
-          (f) => f + "()",
-        ).join(", ")} or for loops`,
+        message: `Invalid command: "${trimmedLine}". Valid commands: ${FUNCTIONS.filter(
+          (f) => f !== "repeat",
+        )
+          .map((f) => f + "()")
+          .join(", ")}, for loops, or repeat(N):`,
       });
     }
   });
@@ -102,8 +150,14 @@ function highlightCode(code) {
     `<span class="token-keyword">$1</span>`,
   );
 
-  // Highlight function names
-  FUNCTIONS.forEach((fn) => {
+  // Highlight 'repeat' keyword
+  escaped = escaped.replace(
+    /\b(repeat)\b/g,
+    `<span class="token-keyword">$1</span>`,
+  );
+
+  // Highlight function names (exclude 'repeat' since it's a keyword)
+  FUNCTIONS.filter((fn) => fn !== "repeat").forEach((fn) => {
     const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
     escaped = escaped.replace(
       fnRegex,
@@ -124,6 +178,9 @@ function highlightCode(code) {
     /\b(\d+)\b/g,
     `<span class="token-number">$1</span>`,
   );
+
+  // Highlight colons (for repeat syntax)
+  escaped = escaped.replace(/:/g, `<span class="token-colon">:</span>`);
 
   return escaped;
 }
@@ -322,35 +379,60 @@ document.addEventListener("DOMContentLoaded", () => {
     const caretPos = pre.toString().length;
 
     if (e.key === "Enter") {
-      e.preventDefault();
       const text = editor.innerText || "";
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
 
-      // Check if cursor is between {}
-      const charBefore = text.charAt(caretPos - 1);
-      const charAfter = text.charAt(caretPos);
+      // Compute caret position
+      const pre = range.cloneRange();
+      pre.selectNodeContents(editor);
+      pre.setEnd(range.endContainer, range.endOffset);
+      const caretPos = pre.toString().length;
 
-      if (charBefore === "{" && charAfter === "}") {
-        // Insert two newlines with indentation in between
-        range.deleteContents();
-        const newlines = document.createTextNode("\n  \n");
-        range.insertNode(newlines);
+      // Get the text before the caret
+      const textBeforeCaret = text.substring(0, caretPos);
+      const currentLine = textBeforeCaret.split("\n").pop();
 
-        // Move caret to the indented line (after first \n and two spaces)
-        setCaretAtPos(editor, caretPos + 3);
-      } else {
-        // Regular newline
-        range.deleteContents();
-        const br = document.createTextNode("\n");
-        range.insertNode(br);
+      console.log("Enter pressed!");
+      console.log("Current line:", currentLine);
+      console.log("Ends with colon?", currentLine.trim().endsWith(":"));
 
-        // Move caret after the newline
-        range.setStartAfter(br);
-        range.setEndAfter(br);
-        sel.removeAllRanges();
-        sel.addRange(range);
+      // Check if previous line ends with colon
+      if (currentLine.trim().endsWith(":")) {
+        console.log("After colon - letting Enter happen, then triggering Tab!");
+        // Let the Enter happen naturally first
+        // Don't prevent default
+
+        // After a short delay, trigger a Tab
+        setTimeout(() => {
+          const tabEvent = new KeyboardEvent("keydown", {
+            key: "Tab",
+            code: "Tab",
+            keyCode: 9,
+            which: 9,
+            bubbles: true,
+            cancelable: true,
+          });
+          editor.dispatchEvent(tabEvent);
+        }, 0);
+        return;
       }
+      // Otherwise let browser handle Enter naturally
+    }
 
-      // Trigger input to update highlighting
+    if (e.key === "Tab") {
+      e.preventDefault();
+      // Insert 2 spaces for indentation
+      range.deleteContents();
+      const spaces = document.createTextNode("  ");
+      range.insertNode(spaces);
+
+      range.setStartAfter(spaces);
+      range.setEndAfter(spaces);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
       editor.dispatchEvent(new Event("input"));
       return;
     }
@@ -372,6 +454,22 @@ document.addEventListener("DOMContentLoaded", () => {
       setCaretAtPos(editor, newPos);
 
       // Trigger input to run highlighting and UI updates
+      editor.dispatchEvent(new Event("input"));
+      return;
+    }
+
+    if (e.key === ":") {
+      e.preventDefault();
+      // Just insert the colon - user will press Enter or Tab to indent
+      range.deleteContents();
+      const colonNode = document.createTextNode(":");
+      range.insertNode(colonNode);
+
+      range.setStartAfter(colonNode);
+      range.setEndAfter(colonNode);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
       editor.dispatchEvent(new Event("input"));
       return;
     }

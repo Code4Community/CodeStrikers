@@ -356,7 +356,36 @@
           <li><code>moveUp()</code> – Move 1 space up</li>
           <li><code>moveDown()</code> – Move 1 space down</li>
           <li><code>shootBall()</code> – Shoot ball 4 spaces right</li>
+          <li>
+            <code>repeat(N):</code> – Repeat commands N times (use indentation,
+            NO curly braces)
+          </li>
         </ul>
+      </div>
+
+      <div class="section">
+        <h2>Loop Syntax</h2>
+        <h3>Using repeat()</h3>
+        <p>
+          The <code>repeat(N):</code> function lets you repeat code blocks N
+          times using Python-style indentation:
+        </p>
+        <pre
+          style="
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+          "
+        >
+repeat(5):
+  moveRight()
+  moveUp()</pre
+        >
+        <p>
+          <strong>Important:</strong> Use a colon <code>:</code> after the
+          parentheses and indent the code inside (NO curly braces needed)
+        </p>
       </div>
 
       <div class="section">
@@ -403,8 +432,9 @@
         <div class="level">
           <h3>Level 3</h3>
           <p>
-            More difficult level introducing <code>while</code> loops and
-            <code>inFront()</code>. Move around defenders to score.
+            More difficult level with multiple defenders spread across the
+            field. Use <code>repeat()</code> to efficiently navigate around them
+            and score.
           </p>
         </div>
 

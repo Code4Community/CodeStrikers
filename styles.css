@@ -776,6 +776,11 @@ body > * {
   font-weight: 600;
 }
 
+.token-colon {
+  color: #d32f2f;
+  font-weight: bold;
+}
+
 .token-number {
   color: #00796b;
   font-weight: 600;
