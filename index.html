@@ -251,12 +251,15 @@
           </button>
         </div>
 
-        <pre
-          id="game-textbox"
-          contenteditable="false"
-          spellcheck="false"
-          data-placeholder="Type Code Here..."
-        ></pre>
+        <div id="editor-container" style="display: none">
+          <div id="line-numbers"></div>
+          <pre
+            id="game-textbox"
+            contenteditable="false"
+            spellcheck="false"
+            data-placeholder="Type Code Here..."
+          ></pre>
+        </div>
         <div id="scoreboard" style="display: none">
           <div
             id="freeplay-timer-container"

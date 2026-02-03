@@ -103,15 +103,36 @@ function updateLineNumbers() {
   const editor = document.getElementById("game-textbox");
   const lineNumbers = document.getElementById("line-numbers");
 
-  const lines = editor.innerText.split("\n");
-  const lineCount = lines.length;
+  if (!editor || !lineNumbers) return;
 
-  let numbers = "";
-  for (let i = 1; i <= lineCount; i++) {
-    numbers += i + "\n";
+  const text = editor.innerText || "";
+  const lines = text.split("\n");
+
+  // Don't count trailing empty line (browser adds for cursor positioning)
+  let lineCount = lines.length;
+  if (lineCount > 1 && lines[lines.length - 1] === "") {
+    lineCount--;
   }
 
+  // Only update if line count changed (optimization)
+  const currentCount = parseInt(lineNumbers.dataset.lineCount || "0");
+  if (currentCount === lineCount) return; // Skip if no change
+
+  // Build line numbers using Array.from for better performance
+  const numbers = Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
+
   lineNumbers.textContent = numbers;
+  lineNumbers.dataset.lineCount = lineCount; // Cache for next check
+}
+
+function syncScroll() {
+  const editor = document.getElementById("game-textbox");
+  const lineNumbers = document.getElementById("line-numbers");
+
+  if (!editor || !lineNumbers) return;
+
+  // Sync line numbers scroll with editor scroll
+  lineNumbers.scrollTop = editor.scrollTop;
 }
 
 function displaySyntaxErrors(errors) {
@@ -150,14 +171,8 @@ function highlightCode(code) {
     `<span class="token-keyword">$1</span>`,
   );
 
-  // Highlight 'repeat' keyword
-  escaped = escaped.replace(
-    /\b(repeat)\b/g,
-    `<span class="token-keyword">$1</span>`,
-  );
-
-  // Highlight function names (exclude 'repeat' since it's a keyword)
-  FUNCTIONS.filter((fn) => fn !== "repeat").forEach((fn) => {
+  // Highlight function names (including 'repeat')
+  FUNCTIONS.forEach((fn) => {
     const fnRegex = new RegExp(`\\b(${fn})(?=\\()`, "g");
     escaped = escaped.replace(
       fnRegex,
@@ -266,6 +281,9 @@ function updateLevelButtons() {
   }
 }
 
+// Debounce variables for input handler
+let highlightTimer = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const editor = document.getElementById("game-textbox");
   const difficultyButtons = document.querySelector(".difficulty-buttons");
@@ -298,46 +316,64 @@ document.addEventListener("DOMContentLoaded", () => {
     const caretPos = preCaretRange.toString().length;
 
     const plainText = editor.innerText;
-    editor.innerHTML = highlightCode(plainText);
 
-    function setCaret(el, pos) {
-      for (let node of el.childNodes) {
-        if (node.nodeType === 3) {
-          if (node.length >= pos) {
-            const range = document.createRange();
-            const sel = window.getSelection();
-            range.setStart(node, pos);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-            return -1;
-          } else {
-            pos -= node.length;
-          }
-        } else {
-          pos = setCaret(node, pos);
-        }
-        if (pos === -1) return -1;
-      }
-      return pos;
-    }
-    // Restore caret to original position after replacing innerHTML
-    try {
-      setCaret(editor, caretPos);
-    } catch (err) {
-      // If caret restore fails for any reason, move caret to end as fallback
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-
-    // Update line numbers and syntax error display
+    // Update line numbers immediately (this is fast)
     updateLineNumbers();
-    displaySyntaxErrors(checkSyntaxErrors(plainText));
+
+    // Debounce the expensive highlighting using requestAnimationFrame
+    if (highlightTimer) {
+      cancelAnimationFrame(highlightTimer);
+    }
+
+    highlightTimer = requestAnimationFrame(() => {
+      // Save current caret position
+      const savedPos = caretPos;
+
+      // Apply syntax highlighting
+      editor.innerHTML = highlightCode(plainText);
+
+      // Restore caret position
+      function setCaret(el, pos) {
+        for (let node of el.childNodes) {
+          if (node.nodeType === 3) {
+            if (node.length >= pos) {
+              const range = document.createRange();
+              const sel = window.getSelection();
+              range.setStart(node, pos);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              return -1;
+            } else {
+              pos -= node.length;
+            }
+          } else {
+            pos = setCaret(node, pos);
+          }
+          if (pos === -1) return -1;
+        }
+        return pos;
+      }
+
+      try {
+        setCaret(editor, savedPos);
+      } catch (err) {
+        // If caret restore fails, move to end
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      // Check syntax errors (this is also expensive, so it's debounced too)
+      displaySyntaxErrors(checkSyntaxErrors(plainText));
+    });
   });
+
+  // Sync line numbers scrolling with editor
+  editor.addEventListener("scroll", syncScroll);
 
   // Auto-pairing for parentheses: insert matching ')' after '(' and skip over
   // existing ')' when user types ')'. Runs on keydown so we can preventDefault
@@ -379,46 +415,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const caretPos = pre.toString().length;
 
     if (e.key === "Enter") {
+      e.preventDefault(); // CRITICAL: Prevent browser's default Enter behavior
+
       const text = editor.innerText || "";
       const sel = window.getSelection();
       if (!sel.rangeCount) return;
       const range = sel.getRangeAt(0);
 
-      // Compute caret position
-      const pre = range.cloneRange();
-      pre.selectNodeContents(editor);
-      pre.setEnd(range.endContainer, range.endOffset);
-      const caretPos = pre.toString().length;
-
-      // Get the text before the caret
+      // Get text before caret
       const textBeforeCaret = text.substring(0, caretPos);
       const currentLine = textBeforeCaret.split("\n").pop();
 
-      console.log("Enter pressed!");
-      console.log("Current line:", currentLine);
-      console.log("Ends with colon?", currentLine.trim().endsWith(":"));
-
-      // Check if previous line ends with colon
+      // Check if previous line ends with colon - auto-indent
       if (currentLine.trim().endsWith(":")) {
-        console.log("After colon - letting Enter happen, then triggering Tab!");
-        // Let the Enter happen naturally first
-        // Don't prevent default
+        // Insert newline + 2 spaces for indentation
+        range.deleteContents();
+        const indentedNewline = document.createTextNode("\n  ");
+        range.insertNode(indentedNewline);
 
-        // After a short delay, trigger a Tab
-        setTimeout(() => {
-          const tabEvent = new KeyboardEvent("keydown", {
-            key: "Tab",
-            code: "Tab",
-            keyCode: 9,
-            which: 9,
-            bubbles: true,
-            cancelable: true,
-          });
-          editor.dispatchEvent(tabEvent);
-        }, 0);
-        return;
+        // Move caret to end of inserted content
+        range.setStartAfter(indentedNewline);
+        range.setEndAfter(indentedNewline);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        // Regular newline (no indent)
+        range.deleteContents();
+        const newline = document.createTextNode("\n");
+        range.insertNode(newline);
+
+        // Move caret after newline
+        range.setStartAfter(newline);
+        range.setEndAfter(newline);
+        sel.removeAllRanges();
+        sel.addRange(range);
       }
-      // Otherwise let browser handle Enter naturally
+
+      // Trigger input event to update line numbers and highlighting
+      // Use setTimeout to let browser update selection first
+      setTimeout(() => editor.dispatchEvent(new Event("input")), 0);
+      return;
     }
 
     if (e.key === "Tab") {
@@ -1094,8 +1130,10 @@ function updateUIForLevel(level) {
   if (level === "bot") {
     if (difficultyButtons) difficultyButtons.style.display = "flex";
     if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
-    editor.style.display = "none";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "none";
     editor.contentEditable = "false";
+    if (editorContainer) editorContainer.classList.remove("enabled");
     editor.classList.remove("enabled");
     editor.innerHTML = "";
     if (scoreboard) scoreboard.style.display = "none";
@@ -1110,8 +1148,10 @@ function updateUIForLevel(level) {
       if (mode1v1Buttons) mode1v1Buttons.style.display = "flex";
       if (scoreboard) scoreboard.style.display = "none";
     }
-    editor.style.display = "none";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "none";
     editor.contentEditable = "false";
+    if (editorContainer) editorContainer.classList.remove("enabled");
     editor.classList.remove("enabled");
     editor.innerHTML = "";
     if (runBtn) runBtn.style.display = "none";
@@ -1119,10 +1159,13 @@ function updateUIForLevel(level) {
   } else {
     if (difficultyButtons) difficultyButtons.style.display = "none";
     if (mode1v1Buttons) mode1v1Buttons.style.display = "none";
-    editor.style.display = "block";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "block";
     editor.contentEditable = "true";
+    if (editorContainer) editorContainer.classList.add("enabled");
     editor.classList.add("enabled");
     editor.innerHTML = "";
+    updateLineNumbers();
     if (scoreboard) scoreboard.style.display = "none";
     if (runBtn) runBtn.style.display = "inline-block";
     if (clearBtn) clearBtn.style.display = "inline-block";

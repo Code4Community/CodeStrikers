@@ -2933,8 +2933,10 @@ function startGame() {
         }
       };
     }
-    editor.style.display = "none";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "none";
     editor.contentEditable = "false";
+    if (editorContainer) editorContainer.classList.remove("enabled");
     editor.classList.remove("enabled");
     editor.innerHTML = "";
     if (runBtn) runBtn.style.display = "none";
@@ -2947,8 +2949,10 @@ function startGame() {
     }
   } else if (selectedValue === "bot") {
     if (start1v1Btn) start1v1Btn.style.display = "none";
-    editor.style.display = "none";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "none";
     editor.contentEditable = "false";
+    if (editorContainer) editorContainer.classList.remove("enabled");
     editor.classList.remove("enabled");
     editor.innerHTML = "";
     if (scoreboard) scoreboard.style.display = "none";
@@ -2956,10 +2960,15 @@ function startGame() {
     if (clearBtn) clearBtn.style.display = "none";
   } else {
     if (start1v1Btn) start1v1Btn.style.display = "none";
-    editor.style.display = "block";
+    const editorContainer = document.getElementById("editor-container");
+    if (editorContainer) editorContainer.style.display = "block";
     editor.contentEditable = "true";
+    if (editorContainer) editorContainer.classList.add("enabled");
     editor.classList.add("enabled");
     editor.innerHTML = "";
+    // Initialize line numbers
+    const lineNumbers = document.getElementById("line-numbers");
+    if (lineNumbers) lineNumbers.textContent = "1\n";
     if (scoreboard) scoreboard.style.display = "none";
     if (runBtn) runBtn.style.display = "inline-block";
     if (clearBtn) clearBtn.style.display = "inline-block";
